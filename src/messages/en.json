@@ -1,0 +1,60 @@
+{
+  "common": {
+    "appName": "Next.js Starter (Tailwind)",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel",
+    "notFound": "Page not found",
+    "errorTitle": "Something went wrong",
+    "tryAgain": "Try again"
+  },
+  "app": {
+    "title": "Next.js Starter (Tailwind)",
+    "subtitle": "Frontend base with optional auth, i18n, and API client",
+    "version": "Version {version}",
+    "features": "Enabled features",
+    "apiHealth": "API status",
+    "apiHealthy": "API is healthy",
+    "apiUnreachable": "Cannot reach API",
+    "goToLogin": "Log in",
+    "dashboard": "Dashboard"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Sign up",
+    "logout": "Log out",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginSuccess": "Logged in successfully",
+    "registerSuccess": "Registered successfully",
+    "passwordMismatch": "Passwords do not match",
+    "passwordMinLength": "Password must be at least 8 characters"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome, {email}",
+    "placeholder": "This is a dashboard placeholder. Add domain features here.",
+    "settings": "Settings"
+  },
+  "settings": {
+    "title": "Settings",
+    "placeholder": "Add user preferences and API key management here.",
+    "appearance": "Appearance",
+    "themeLight": "Light",
+    "themeDark": "Dark"
+  },
+  "errors": {
+    "INVALID_CREDENTIALS": "Invalid email or password",
+    "UNAUTHORIZED": "Session expired",
+    "VALIDATION_ERROR": "Invalid data",
+    "CONFLICT": "Data already exists",
+    "INTERNAL_ERROR": "System error",
+    "UNKNOWN": "An unknown error occurred"
+  }
+}

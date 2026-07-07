@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test-core:
+    name: test (core)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: cp .env.example .env
+      - run: pnpm exec playwright install chromium --with-deps
+      - run: PLAYWRIGHT_PORT=3002 pnpm run validate
+
+  test-full:
+    name: test (full — auth UI)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Configure env (auth enabled)
+        run: |
+          cat > .env <<EOF
+          NODE_ENV=test
+          APP_NAME=nextjs-starter-tailwind
+          APP_VERSION=1.0.0
+          NEXT_PUBLIC_API_URL=http://localhost:3001
+          FEATURE_AUTH=true
+          EOF
+
+      - run: pnpm exec playwright install chromium --with-deps
+      - name: Validate (auth)
+        env:
+          FEATURE_AUTH: 'true'
+        run: PLAYWRIGHT_PORT=3003 pnpm run validate

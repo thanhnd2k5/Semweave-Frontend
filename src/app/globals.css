@@ -1,0 +1,115 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Semweave design tokens — docs/design.md §2, §4. Light = :root, dark = .dark */
+
+:root {
+  --sem-bg-base: #f8f7f4;
+  --sem-bg-surface: #ffffff;
+  --sem-bg-elevated: #f3f2ef;
+  --sem-text-primary: #0f172a;
+  --sem-text-muted: #64748b;
+  --sem-border: #e2e8f0;
+  /* Light: teal-700 for AA contrast on parchment (link 4.9:1, white-on-accent 5.4:1) */
+  --sem-accent: #0f766e;
+  --sem-accent-hover: #115e59;
+  --sem-accent-subtle: rgba(15, 118, 110, 0.1);
+  --sem-warm: #d97706;
+  --sem-success: #16a34a;
+  --sem-error: #dc2626;
+  --sem-health-1: #5eead4;
+  --sem-health-2: #2dd4bf;
+  --sem-health-3: #14b8a6;
+  --sem-health-4: #0f766e;
+  --sem-on-accent: #ffffff;
+}
+
+.dark {
+  --sem-bg-base: #0f1419;
+  --sem-bg-surface: #1a222d;
+  --sem-bg-elevated: #232d3b;
+  --sem-text-primary: #f1f5f9;
+  --sem-text-muted: #94a3b8;
+  --sem-border: #2d3a4d;
+  --sem-accent: #14b8a6;
+  --sem-accent-hover: #2dd4bf;
+  --sem-accent-subtle: rgba(20, 184, 166, 0.12);
+  --sem-warm: #f59e0b;
+  --sem-success: #22c55e;
+  --sem-error: #f87171;
+  --sem-health-1: #5eead4;
+  --sem-health-2: #2dd4bf;
+  --sem-health-3: #14b8a6;
+  --sem-health-4: #0f766e;
+  /* Dark: bright teal bg keeps friendly warmth; dark ink text ≈ 6.2:1 (white on it fails 2.5:1) */
+  --sem-on-accent: #052925;
+}
+
+@theme {
+  --color-bg-base: var(--sem-bg-base);
+  --color-bg-surface: var(--sem-bg-surface);
+  --color-bg-elevated: var(--sem-bg-elevated);
+  --color-text-primary: var(--sem-text-primary);
+  --color-text-muted: var(--sem-text-muted);
+  --color-border: var(--sem-border);
+  --color-accent: var(--sem-accent);
+  --color-accent-hover: var(--sem-accent-hover);
+  --color-accent-subtle: var(--sem-accent-subtle);
+  --color-warm: var(--sem-warm);
+  --color-success: var(--sem-success);
+  --color-error: var(--sem-error);
+  --color-health-1: var(--sem-health-1);
+  --color-health-2: var(--sem-health-2);
+  --color-health-3: var(--sem-health-3);
+  --color-health-4: var(--sem-health-4);
+  --color-on-accent: var(--sem-on-accent);
+  /* Health scale is fixed across themes (design.md §2.6) — text needs a fixed
+     counterpart, not the theme-flipping on-accent. health-1..3 are light → dark
+     ink text; health-4 is dark → use text-white directly (Tailwind builtin). */
+  --color-health-ink: #052925;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  /* Type scale — design.md §2.8. body/small use Tailwind defaults (text-base / text-sm) */
+  --text-display: 2rem;
+  --text-display--line-height: 1.2;
+  --text-display--font-weight: 600;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.35;
+  --text-title--font-weight: 600;
+  --text-word: 1.5rem;
+  --text-word--line-height: 1.3;
+  --text-word--font-weight: 600;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+}
+
+@layer base {
+  body {
+    /* Vi + En cùng scale — dấu tiếng Việt cần khoảng dọc (design.md §2.8) */
+    line-height: 1.6;
+  }
+  h1,
+  h2,
+  h3 {
+    line-height: 1.25;
+  }
+}
+
+/* Reduced motion — design.md §7.1. Info-carrying color changes (quiz feedback)
+   stay instant either way since they are not decorative. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
