@@ -12,7 +12,7 @@ const optionalUrl = z.preprocess(
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-    APP_NAME: z.string().default('nextjs-starter-tailwind'),
+    APP_NAME: z.string().default('semweave-web'),
     APP_VERSION: z.string().default('1.0.0'),
 
     NEXT_PUBLIC_API_URL: optionalUrl,

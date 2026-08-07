@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Next.js Starter (Tailwind)",
+    "appName": "Semweave",
     "loading": "Loading...",
     "error": "An error occurred",
     "retry": "Retry",
@@ -12,14 +12,15 @@
     "tryAgain": "Try again"
   },
   "app": {
-    "title": "Next.js Starter (Tailwind)",
-    "subtitle": "Frontend base with optional auth, i18n, and API client",
+    "title": "Semweave",
+    "subtitle": "AI-first vocabulary learning — weave a semantic web, not a list",
     "version": "Version {version}",
     "features": "Enabled features",
     "apiHealth": "API status",
     "apiHealthy": "API is healthy",
     "apiUnreachable": "Cannot reach API",
     "goToLogin": "Log in",
+    "goToRegister": "Sign up",
     "dashboard": "Dashboard"
   },
   "auth": {
@@ -44,10 +45,18 @@
   },
   "settings": {
     "title": "Settings",
-    "placeholder": "Add user preferences and API key management here.",
     "appearance": "Appearance",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "language": "Language",
+    "languageVi": "Tiếng Việt",
+    "languageEn": "English",
+    "learning": "Learning",
+    "dailyNewWordLimit": "Max new words / day",
+    "sessionWordCount": "Words per session",
+    "saveError": "Could not save — try again",
+    "account": "Account",
+    "noApiKeyNote": "Semweave uses app-managed AI — no API key to enter."
   },
   "errors": {
     "INVALID_CREDENTIALS": "Invalid email or password",

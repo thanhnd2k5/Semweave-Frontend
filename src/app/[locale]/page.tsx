@@ -32,6 +32,9 @@ export default async function HomePage() {
           >
             {t('goToLogin')}
           </Link>
+          <Link href={ROUTES.register} className={theme.navButtonSecondary}>
+            {t('goToRegister')}
+          </Link>
           <Link href={ROUTES.dashboard} className={theme.navButtonSecondary}>
             {t('dashboard')}
           </Link>

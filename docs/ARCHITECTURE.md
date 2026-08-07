@@ -20,7 +20,7 @@ src/
 
 - **Config**: Zod validation at build/dev; fail fast on invalid env
 - **API client**: Axios with `{ success, data, error }` envelope unwrap
-- **Errors**: `ApiError` with machine-readable `code` (mirrors nestjs-starter)
+- **Errors**: `ApiError` with machine-readable `code` (mirrors semweave-api)
 - **i18n**: next-intl with `[locale]` routing (`vi`, `en`)
 - **State**: TanStack Query for server state; Zustand for auth (when enabled)
 - **UI**: Tailwind CSS primitives (`Button`, `Input`, `LoadingSpinner`) + shared `theme.*` classes for light/dark

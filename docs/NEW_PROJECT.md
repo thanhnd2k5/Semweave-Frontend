@@ -1,14 +1,12 @@
 # New Project Checklist
 
-Use when cloning `nextjs-starter-tailwind` for a new frontend project.
+Use when setting up `semweave-web` for Semweave (or cloning as a new frontend project).
 
 ## 1. Clone and rename
 
 ```bash
-git clone <nextjs-starter-tailwind-url> my-web
+git clone <semweave-web-url> my-web
 cd my-web
-rm -rf .git
-git init
 ```
 
 Update in `.env` and `package.json`:

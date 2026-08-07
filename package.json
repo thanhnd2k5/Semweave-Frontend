@@ -1,7 +1,7 @@
 {
-  "name": "nextjs-starter-tailwind",
+  "name": "semweave-web",
   "version": "1.0.0",
-  "description": "Reusable Next.js starter base with Tailwind CSS and optional feature modules",
+  "description": "Semweave Next.js web — Tailwind, next-intl, optional auth",
   "private": true,
   "license": "MIT",
   "packageManager": "pnpm@10.34.4",

@@ -6,7 +6,7 @@ Optional modules are toggled via environment variables in `.env` (or `.env.local
 
 ## Auth (`FEATURE_AUTH`)
 
-Requires a NestJS backend with auth enabled (see `nestjs-starter`).
+Requires `semweave-api` with auth enabled.
 
 ```bash
 FEATURE_AUTH=true
@@ -21,9 +21,10 @@ FEATURE_API_PROXY=true
 API_PROXY_TARGET=http://localhost:3001
 ```
 
-**Backend (nestjs-starter) must also have:**
+**Backend (`semweave-api`) must also have:**
 
 ```bash
+PORT=3001
 FEATURE_PRISMA=true
 FEATURE_AUTH=true
 DATABASE_URL=postgresql://...
@@ -35,9 +36,9 @@ CORS_ORIGINS=http://localhost:3000
 **Provides:**
 
 - `POST /auth/login`, `/auth/register`, `/auth/refresh`, `/auth/logout`
-- `GET /users/me`
+- `GET /users/me`, `PATCH /users/settings`
 - Pages: `/vi/auth/login`, `/vi/auth/register`
-- Protected: `/dashboard`, `/settings`
+- Protected: `/dashboard`, `/settings` (theme, language, learning prefs — **no API key**)
 - Zustand `auth-store` with in-memory access token
 - `auth_session` cookie (routing hint for middleware after login)
 
@@ -76,9 +77,9 @@ FEATURE_OFFLINE=true
 
 **Provides:**
 
-- Dexie IndexedDB stub (`local-db.ts`)
+- Dexie IndexedDB stub (`local-db.ts`, DB name `SemweaveLocal`)
 - `OfflineProvider` in app providers
-- Tables: `pendingAttempts`, `cachedQuizPools` (placeholder for LearnVocab quiz sync)
+- Tables: `pendingAttempts`, `cachedQuizPools` (placeholder for quiz sync)
 
 ## i18n (core)
 
@@ -93,27 +94,28 @@ Locales: `vi` (default), `en`. All user-facing routes live under `/[locale]/`.
 ## Full-stack example (direct API)
 
 ```bash
-# nestjs-starter/.env
+# Semweave-Backend/.env
 PORT=3001
 FEATURE_PRISMA=true
 FEATURE_AUTH=true
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/nestjs_starter
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/semweave
 JWT_ACCESS_SECRET=change-me-access-secret-min-32-chars
 JWT_REFRESH_SECRET=change-me-refresh-secret-min-32-chars
 ENCRYPTION_SECRET=change-me-encryption-secret-32chars
 CORS_ORIGINS=http://localhost:3000
 
-# nextjs-starter-tailwind/.env
+# Semweave-Frontend/.env
 FEATURE_AUTH=true
 NEXT_PUBLIC_API_URL=http://localhost:3001
+APP_NAME=Semweave
 ```
 
 ```bash
 # Terminal 1
-cd nestjs-starter && pnpm run dev
+cd Semweave-Backend && pnpm run dev
 
 # Terminal 2
-cd nextjs-starter-tailwind && pnpm run dev
+cd Semweave-Frontend && pnpm run dev
 ```
 
 Open http://localhost:3000/vi/auth/register to create an account.
@@ -121,13 +123,13 @@ Open http://localhost:3000/vi/auth/register to create an account.
 ## Full-stack example (dev proxy — no CORS)
 
 ```bash
-# nextjs-starter-tailwind/.env
+# Semweave-Frontend/.env
 FEATURE_AUTH=true
 FEATURE_API_PROXY=true
 API_PROXY_TARGET=http://localhost:3001
 ```
 
 ```bash
-cd nestjs-starter && PORT=3001 pnpm run dev
-cd nextjs-starter-tailwind && pnpm run dev
+cd Semweave-Backend && pnpm run dev
+cd Semweave-Frontend && pnpm run dev
 ```

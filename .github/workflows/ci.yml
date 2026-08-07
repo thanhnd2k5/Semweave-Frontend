@@ -50,7 +50,7 @@ jobs:
         run: |
           cat > .env <<EOF
           NODE_ENV=test
-          APP_NAME=nextjs-starter-tailwind
+          APP_NAME=Semweave
           APP_VERSION=1.0.0
           NEXT_PUBLIC_API_URL=http://localhost:3001
           FEATURE_AUTH=true

@@ -20,7 +20,7 @@ class LocalDatabase extends Dexie {
   cachedQuizPools!: Table<CachedQuizPool, string>;
 
   constructor() {
-    super('NextjsStarterLocal');
+    super('SemweaveLocal');
     this.version(1).stores({
       pendingAttempts: '++id, sessionId, syncedAt',
       cachedQuizPools: 'wordId, cachedAt',

@@ -1,28 +1,21 @@
-# nextjs-starter-tailwind
+# semweave-web
 
-**Repo độc lập** — Next.js frontend base với optional auth, API proxy, offline cache stub, i18n (core), và **Tailwind CSS v4**.
+**Repo độc lập** — Next.js frontend cho Semweave (Tailwind CSS v4, next-intl, optional auth).
 
-> Variant của [`nextjs-starter`](../nextjs-starter) — cùng kiến trúc, khác styling (Tailwind thay CSS Modules).
+Workspace: xem [README gốc](../README.md) và [docs/STATUS.md](../docs/STATUS.md).
 
 ## Quick start
 
-Requires [pnpm](https://pnpm.io/installation) 10+:
+Requires [pnpm](https://pnpm.io/installation) 10+ và Node 20 (`.nvmrc` ở workspace root).
 
 ```bash
-# Node 24 trở xuống (corepack có sẵn)
 corepack enable
-
-# Node 25+ (corepack không còn đi kèm Node)
-npm install -g pnpm@10.34.4
-```
-
-```bash
 cp .env.example .env
 pnpm install
 pnpm run dev
 ```
 
-- http://localhost:3000/vi — Home (app info + API health)
+- http://localhost:3000/vi — Home
 - http://localhost:3000/vi/settings — User preferences (protected when `FEATURE_AUTH=true`)
 - http://localhost:3000/vi/auth/login — Login (when `FEATURE_AUTH=true`)
 - http://localhost:3000/vi/dashboard — Dashboard placeholder
@@ -31,8 +24,8 @@ pnpm run dev
 
 - next-intl (`vi` / `en`) — configure via `NEXT_PUBLIC_DEFAULT_LOCALE`
 - API client with `{ success, data, error }` envelope
-- Tailwind CSS v4 utility classes (`Button`, `Input`, `LoadingSpinner`) — `globals.css` chỉ `@import 'tailwindcss'` + `@custom-variant dark`
-- Light / dark theme: toggle trên **header mọi trang** (không cần login) + section Giao diện trong Settings; `html.dark`, `lib/theme-classes.ts`, `localStorage` key `theme`, default dark
+- Tailwind CSS v4 + Semweave semantic tokens (`theme-classes.ts`)
+- Light / dark theme: toggle trên header + Settings
 
 ## Feature flags
 
@@ -46,19 +39,19 @@ See [docs/ENABLE_FEATURES.md](./docs/ENABLE_FEATURES.md).
 
 > **Rebuild required** after changing feature flags (`NEXT_PUBLIC_*` baked at build time).
 
-## Full-stack with nestjs-starter
+## Full-stack with semweave-api
 
 ```bash
 # Terminal 1 — API on port 3001
-cd ../nestjs-starter
-PORT=3001 FEATURE_PRISMA=true FEATURE_AUTH=true pnpm run dev
+cd ../Semweave-Backend
+pnpm run dev
 
 # Terminal 2 — Web on port 3000
-cd nextjs-starter-tailwind
-FEATURE_AUTH=true NEXT_PUBLIC_API_URL=http://localhost:3001 pnpm run dev
+cd ../Semweave-Frontend
+pnpm run dev
 ```
 
-Set `CORS_ORIGINS=http://localhost:3000` in nestjs-starter `.env`.
+Set `CORS_ORIGINS=http://localhost:3000` and `PORT=3001` in semweave-api `.env`.
 
 ## Scripts
 

@@ -27,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const env = getEnvConfig();
   return {
     title: env.APP_NAME,
-    description: `${env.APP_NAME} — Next.js frontend starter`,
+    description: `${env.APP_NAME} — AI-first vocabulary learning`,
   };
 }
 

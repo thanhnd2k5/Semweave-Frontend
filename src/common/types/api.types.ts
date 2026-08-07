@@ -38,10 +38,18 @@ export interface AppInfo {
   docs: string | null;
 }
 
+export interface UserSettings {
+  dailyNewWordLimit: number;
+  sessionWordCount: number;
+  theme: string;
+  language: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
   createdAt: string;
+  settings: UserSettings;
 }
 
 export interface AuthTokens {

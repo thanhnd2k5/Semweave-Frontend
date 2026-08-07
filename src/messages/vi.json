@@ -1,6 +1,6 @@
 {
   "common": {
-    "appName": "Next.js Starter (Tailwind)",
+    "appName": "Semweave",
     "loading": "Đang tải...",
     "error": "Đã xảy ra lỗi",
     "retry": "Thử lại",
@@ -12,14 +12,15 @@
     "tryAgain": "Thử lại"
   },
   "app": {
-    "title": "Next.js Starter (Tailwind)",
-    "subtitle": "Frontend base với optional auth, i18n và API client",
+    "title": "Semweave",
+    "subtitle": "Học từ vựng AI-first — dệt mạng ngữ nghĩa, không chỉ danh sách",
     "version": "Phiên bản {version}",
     "features": "Tính năng đã bật",
     "apiHealth": "Trạng thái API",
     "apiHealthy": "API hoạt động bình thường",
     "apiUnreachable": "Không kết nối được API",
     "goToLogin": "Đăng nhập",
+    "goToRegister": "Đăng ký",
     "dashboard": "Dashboard"
   },
   "auth": {
@@ -44,10 +45,18 @@
   },
   "settings": {
     "title": "Cài đặt",
-    "placeholder": "Thêm preferences và quản lý API key tại đây.",
     "appearance": "Giao diện",
     "themeLight": "Sáng",
-    "themeDark": "Tối"
+    "themeDark": "Tối",
+    "language": "Ngôn ngữ",
+    "languageVi": "Tiếng Việt",
+    "languageEn": "English",
+    "learning": "Học tập",
+    "dailyNewWordLimit": "Từ mới tối đa / ngày",
+    "sessionWordCount": "Số từ mỗi session",
+    "saveError": "Không lưu được — thử lại",
+    "account": "Tài khoản",
+    "noApiKeyNote": "Semweave dùng AI do app quản lý — không cần nhập API key."
   },
   "errors": {
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu không đúng",

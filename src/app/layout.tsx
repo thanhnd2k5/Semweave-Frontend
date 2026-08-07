@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: {
     template: '%s',
-    default: 'nextjs-starter-tailwind',
+    default: 'Semweave',
   },
 };
 
