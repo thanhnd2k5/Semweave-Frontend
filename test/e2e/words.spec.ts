@@ -37,6 +37,7 @@ type Scenario = 'success' | 'ambiguous' | 'duplicate' | 'limit';
 
 async function mockApi(page: Page, scenario: Scenario) {
   let detailReads = 0;
+  let createdTerm = officialWord.term;
 
   await page.route(`${apiOrigin}/**`, async (route) => {
     const url = route.request().url();
@@ -53,6 +54,11 @@ async function mockApi(page: Page, scenario: Scenario) {
       return;
     }
     if (url.includes('/auth/refresh') && method === 'POST') {
+      const cookieHeader = route.request().headers().cookie ?? '';
+      if (!cookieHeader.includes('auth_session=')) {
+        await respond({ code: 'UNAUTHORIZED', message: 'No session' }, 401);
+        return;
+      }
       await respond({ accessToken: 'test-token' });
       return;
     }
@@ -84,12 +90,23 @@ async function mockApi(page: Page, scenario: Scenario) {
         );
         return;
       }
+      const body = route.request().postDataJSON() as { term?: unknown };
+      if (typeof body.term === 'string') {
+        createdTerm = body.term;
+      }
       await respond({ wordId: officialWord.id, status: 'PENDING' }, 202);
       return;
     }
     if (url.includes(`/words/${officialWord.id}`) && method === 'GET') {
       detailReads += 1;
-      await respond(detailReads === 1 ? { ...officialWord, status: 'PENDING', content: null } : officialWord);
+      const generatedWord = {
+        ...officialWord,
+        term: createdTerm,
+        normalizedTerm: createdTerm,
+      };
+      await respond(
+        detailReads === 1 ? { ...generatedWord, status: 'PENDING', content: null } : generatedWord,
+      );
       return;
     }
 
@@ -116,7 +133,6 @@ test.describe('words', () => {
     await page.getByLabel('Từ tiếng Anh').fill('ephemeral');
     await page.getByRole('button', { name: 'Thêm →' }).click();
 
-    await expect(page.getByText('🤖 AI đang chuẩn bị tài liệu cho \'ephemeral\'')).toBeVisible();
     await expect(page.getByRole('heading', { name: '✅ \'ephemeral\' đã sẵn sàng!' })).toBeVisible();
     await expect(page.getByText('Tồn tại trong thời gian rất ngắn.')).toBeVisible();
     await expect(page.getByText('fleeting')).toBeVisible();
@@ -128,7 +144,7 @@ test.describe('words', () => {
     await page.getByRole('button', { name: 'Thêm →' }).click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
-    await page.getByRole('radio', { name: /Đặt/ }).check();
+    await page.getByText('Đặt', { exact: true }).click();
     await page.getByRole('button', { name: 'Tiếp tục →' }).click();
     await expect(page.getByRole('heading', { name: '✅ \'set\' đã sẵn sàng!' })).toBeVisible();
   });

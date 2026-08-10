@@ -72,7 +72,7 @@
       "contextRequired": "Hãy chọn một nghĩa hoặc nhập ngữ cảnh."
     },
     "duplicate": {
-      "title": "📚 Bạn đã có từ '{word}'",
+      "title": "📚 Bạn đã có từ ''{word}''",
       "reviewed": "Ôn {count} lần · Streak {streak}",
       "question": "Bạn đang gặp khó khăn với từ này?",
       "review": "Xem lại từ này",
@@ -87,14 +87,14 @@
       "cancel": "Hủy"
     },
     "generating": {
-      "title": "🤖 AI đang chuẩn bị tài liệu cho '{word}'",
+      "title": "🤖 AI đang chuẩn bị tài liệu cho ''{word}''",
       "detail": "Đang tạo nghĩa, ví dụ, quiz và các từ liên quan.",
       "typicalDuration": "Thường mất 5-10 giây",
       "status": "Đang tạo tài liệu cho {word}"
     },
     "failed": {
       "title": "Không thể tạo tài liệu",
-      "body": "Không thể tạo tài liệu cho '{word}'.",
+      "body": "Không thể tạo tài liệu cho ''{word}''.",
       "retry": "Thử lại"
     },
     "limit": {
@@ -102,7 +102,7 @@
       "backToDashboard": "Về Dashboard"
     },
     "preview": {
-      "title": "✅ '{word}' đã sẵn sàng!",
+      "title": "✅ ''{word}'' đã sẵn sàng!",
       "meaning": "Nghĩa",
       "example": "Ví dụ",
       "related": "Từ liên quan",
