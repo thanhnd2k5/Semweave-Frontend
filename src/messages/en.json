@@ -41,7 +41,8 @@
     "title": "Dashboard",
     "welcome": "Welcome, {email}",
     "placeholder": "This is a dashboard placeholder. Add domain features here.",
-    "settings": "Settings"
+    "settings": "Settings",
+    "addWord": "Add a word"
   },
   "settings": {
     "title": "Settings",
@@ -58,12 +59,71 @@
     "account": "Account",
     "noApiKeyNote": "Semweave uses app-managed AI — no API key to enter."
   },
+  "words": {
+    "title": "Add a new word",
+    "inputLabel": "English word",
+    "placeholder": "Enter an English word...",
+    "add": "Add →",
+    "checking": "Checking...",
+    "closeDialog": "Close dialog",
+    "validation": {
+      "empty": "Enter an English word.",
+      "tooLong": "A word can be at most 100 characters.",
+      "contextRequired": "Choose a sense or enter context."
+    },
+    "duplicate": {
+      "title": "📚 You already have '{word}'",
+      "reviewed": "Reviewed {count} times · Streak {streak}",
+      "question": "Are you finding this word difficult?",
+      "review": "Review this word",
+      "regenerate": "New explanation",
+      "skip": "Skip",
+      "health": "Word health level {level} of 4"
+    },
+    "ambiguity": {
+      "customContext": "Or enter context",
+      "customPlaceholder": "For example: I saw it in a work email",
+      "continue": "Continue →",
+      "cancel": "Cancel"
+    },
+    "generating": {
+      "title": "🤖 AI is preparing material for '{word}'",
+      "detail": "Creating meanings, examples, quizzes, and related words.",
+      "typicalDuration": "This usually takes 5-10 seconds",
+      "status": "Creating material for {word}"
+    },
+    "failed": {
+      "title": "Could not create learning material",
+      "body": "Could not create learning material for '{word}'.",
+      "retry": "Try again"
+    },
+    "limit": {
+      "body": "You have reached today's limit of {limit} new words. Come back tomorrow 🌙",
+      "backToDashboard": "Back to Dashboard"
+    },
+    "preview": {
+      "title": "✅ '{word}' is ready!",
+      "meaning": "Meaning",
+      "example": "Example",
+      "related": "Related words",
+      "quizSoon": "Try a quiz (coming soon)",
+      "backToDashboard": "Back to Dashboard",
+      "missingContent": "This material is still being finalized."
+    },
+    "requestError": "Could not complete the request. Please try again.",
+    "retryRequest": "Try again"
+  },
   "errors": {
     "INVALID_CREDENTIALS": "Invalid email or password",
     "UNAUTHORIZED": "Session expired",
     "VALIDATION_ERROR": "Invalid data",
     "CONFLICT": "Data already exists",
     "INTERNAL_ERROR": "System error",
-    "UNKNOWN": "An unknown error occurred"
+    "UNKNOWN": "An unknown error occurred",
+    "WORD_ALREADY_EXISTS": "This word is already in your library",
+    "DAILY_LIMIT_EXCEEDED": "You have reached today's new-word limit",
+    "AI_PROVIDER_ERROR": "AI is temporarily having trouble",
+    "AI_UNAVAILABLE": "AI is not available right now",
+    "WORD_GENERATE_FAILED": "Could not create learning material for this word"
   }
 }

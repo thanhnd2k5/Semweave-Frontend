@@ -2,6 +2,7 @@
 export const ROUTES = {
   home: '/',
   dashboard: '/dashboard',
+  wordsNew: '/words/new',
   settings: '/settings',
   login: '/auth/login',
   register: '/auth/register',
@@ -15,7 +16,11 @@ export const PUBLIC_ROUTES: string[] = [
 ];
 
 /** Require authentication when FEATURE_AUTH=true */
-export const PROTECTED_ROUTES: string[] = [ROUTES.dashboard, ROUTES.settings];
+export const PROTECTED_ROUTES: string[] = [
+  ROUTES.dashboard,
+  ROUTES.wordsNew,
+  ROUTES.settings,
+];
 
 const SAFE_INTERNAL_PATH = /^\/[a-zA-Z0-9/_-]*$/;
 

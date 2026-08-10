@@ -28,6 +28,9 @@ export function DashboardContent() {
         <Link href={ROUTES.settings} className={theme.linkMuted}>
           {t('settings')}
         </Link>
+        <Link href={ROUTES.wordsNew} className={theme.link}>
+          {t('addWord')}
+        </Link>
       </nav>
 
       <Link href={ROUTES.home} className={`mt-6 ${theme.linkMuted}`}>

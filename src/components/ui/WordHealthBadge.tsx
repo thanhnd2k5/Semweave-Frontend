@@ -6,6 +6,7 @@ type HealthLevel = 1 | 2 | 3 | 4;
 interface WordHealthBadgeProps {
   level: HealthLevel;
   className?: string;
+  ariaLabel?: string;
 }
 
 const bgClasses: Record<HealthLevel, string> = {
@@ -29,7 +30,7 @@ const textClasses: Record<HealthLevel, string> = {
  * Word Health level pill — docs/design.md §8.4, PRD §8.1.
  * Color always paired with the "Lx" text label (design.md §14.5 — not color-only).
  */
-export function WordHealthBadge({ level, className }: WordHealthBadgeProps) {
+export function WordHealthBadge({ level, className, ariaLabel }: WordHealthBadgeProps) {
   return (
     <span
       className={cn(
@@ -38,7 +39,7 @@ export function WordHealthBadge({ level, className }: WordHealthBadgeProps) {
         textClasses[level],
         className,
       )}
-      aria-label={`Word health level ${level} of 4`}
+      aria-label={ariaLabel ?? `Word health level ${level} of 4`}
     >
       L{level}
     </span>

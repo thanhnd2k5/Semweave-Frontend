@@ -16,6 +16,8 @@ interface ModalProps {
   titleId?: string;
   /** When false, backdrop click and Escape do not close (Clarification flow). */
   dismissible?: boolean;
+  /** Localized accessible label for the dismissible backdrop. */
+  closeLabel?: string;
   footer?: React.ReactNode;
   children: React.ReactNode;
   className?: string;
@@ -28,6 +30,7 @@ export function Modal({
   title,
   titleId: titleIdProp,
   dismissible = true,
+  closeLabel = 'Close dialog',
   footer,
   children,
   className,
@@ -96,7 +99,7 @@ export function Modal({
       <button
         type="button"
         className={cn(theme.modalBackdrop, 'border-0 p-0')}
-        aria-label="Close dialog"
+        aria-label={closeLabel}
         tabIndex={-1}
         onClick={dismissible ? onClose : undefined}
       />

@@ -41,7 +41,8 @@
     "title": "Bảng điều khiển",
     "welcome": "Xin chào, {email}",
     "placeholder": "Đây là trang dashboard placeholder. Thêm domain features tại đây.",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "addWord": "Thêm từ"
   },
   "settings": {
     "title": "Cài đặt",
@@ -58,12 +59,71 @@
     "account": "Tài khoản",
     "noApiKeyNote": "Semweave dùng AI do app quản lý — không cần nhập API key."
   },
+  "words": {
+    "title": "Thêm từ mới",
+    "inputLabel": "Từ tiếng Anh",
+    "placeholder": "Nhập từ tiếng Anh...",
+    "add": "Thêm →",
+    "checking": "Đang kiểm tra...",
+    "closeDialog": "Đóng hộp thoại",
+    "validation": {
+      "empty": "Hãy nhập một từ tiếng Anh.",
+      "tooLong": "Từ tối đa 100 ký tự.",
+      "contextRequired": "Hãy chọn một nghĩa hoặc nhập ngữ cảnh."
+    },
+    "duplicate": {
+      "title": "📚 Bạn đã có từ '{word}'",
+      "reviewed": "Ôn {count} lần · Streak {streak}",
+      "question": "Bạn đang gặp khó khăn với từ này?",
+      "review": "Xem lại từ này",
+      "regenerate": "Giải thích mới",
+      "skip": "Bỏ qua",
+      "health": "Mức độ hiểu từ {level} trên 4"
+    },
+    "ambiguity": {
+      "customContext": "Hoặc nhập ngữ cảnh",
+      "customPlaceholder": "Ví dụ: I saw it in a work email",
+      "continue": "Tiếp tục →",
+      "cancel": "Hủy"
+    },
+    "generating": {
+      "title": "🤖 AI đang chuẩn bị tài liệu cho '{word}'",
+      "detail": "Đang tạo nghĩa, ví dụ, quiz và các từ liên quan.",
+      "typicalDuration": "Thường mất 5-10 giây",
+      "status": "Đang tạo tài liệu cho {word}"
+    },
+    "failed": {
+      "title": "Không thể tạo tài liệu",
+      "body": "Không thể tạo tài liệu cho '{word}'.",
+      "retry": "Thử lại"
+    },
+    "limit": {
+      "body": "Đã đạt giới hạn {limit} từ/ngày hôm nay — quay lại vào ngày mai 🌙",
+      "backToDashboard": "Về Dashboard"
+    },
+    "preview": {
+      "title": "✅ '{word}' đã sẵn sàng!",
+      "meaning": "Nghĩa",
+      "example": "Ví dụ",
+      "related": "Từ liên quan",
+      "quizSoon": "Làm quiz thử (sắp có)",
+      "backToDashboard": "Về Dashboard",
+      "missingContent": "Tài liệu đang được hoàn thiện."
+    },
+    "requestError": "Không thể hoàn tất yêu cầu. Hãy thử lại.",
+    "retryRequest": "Thử lại"
+  },
   "errors": {
     "INVALID_CREDENTIALS": "Email hoặc mật khẩu không đúng",
     "UNAUTHORIZED": "Phiên đăng nhập đã hết hạn",
     "VALIDATION_ERROR": "Dữ liệu không hợp lệ",
     "CONFLICT": "Dữ liệu đã tồn tại",
     "INTERNAL_ERROR": "Lỗi hệ thống",
-    "UNKNOWN": "Đã xảy ra lỗi không xác định"
+    "UNKNOWN": "Đã xảy ra lỗi không xác định",
+    "WORD_ALREADY_EXISTS": "Từ này đã có trong thư viện của bạn",
+    "DAILY_LIMIT_EXCEEDED": "Bạn đã đạt giới hạn từ mới hôm nay",
+    "AI_PROVIDER_ERROR": "AI đang gặp sự cố tạm thời",
+    "AI_UNAVAILABLE": "AI hiện chưa sẵn sàng",
+    "WORD_GENERATE_FAILED": "Không thể tạo tài liệu cho từ này"
   }
 }

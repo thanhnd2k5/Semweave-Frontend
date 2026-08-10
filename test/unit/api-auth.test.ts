@@ -53,9 +53,12 @@ describe('proxy', () => {
   it('allows known path prefixes', () => {
     expect(isProxyPathAllowed('auth/login')).toBe(true);
     expect(isProxyPathAllowed('users/me')).toBe(true);
+    expect(isProxyPathAllowed('words/check-duplicate')).toBe(true);
+    expect(isProxyPathAllowed('words/word-1/retry')).toBe(true);
     expect(isProxyPathAllowed('health')).toBe(true);
     expect(isProxyPathAllowed('')).toBe(true);
     expect(isProxyPathAllowed('admin/secret')).toBe(false);
+    expect(isProxyPathAllowed('wordsmith/secret')).toBe(false);
   });
 
   it('rewrites Set-Cookie path for proxy mode', () => {
