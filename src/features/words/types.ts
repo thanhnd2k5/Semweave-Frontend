@@ -23,6 +23,13 @@ export interface WordShadow {
   id: string;
   term: string;
   status: WordStatus;
+  isQueued?: boolean;
+}
+
+export interface WordQuizSummary {
+  id: string;
+  type: string;
+  difficulty: number;
 }
 
 export interface WordDetail {
@@ -33,9 +40,35 @@ export interface WordDetail {
   status: WordStatus;
   content: unknown;
   addedAt: string;
+  learningStartedAt: string | null;
   updatedAt: string;
   health: WordHealth | null;
+  isQueued?: boolean;
+  quizzes?: WordQuizSummary[];
   shadows?: WordShadow[];
+}
+
+export type WordSort = 'newest' | 'oldest' | 'term-asc' | 'term-desc';
+
+export interface WordListParams {
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  statuses?: WordStatus[];
+  tag?: string;
+  sort?: WordSort;
+}
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface WordListResult {
+  items: WordDetail[];
+  meta: PaginationMeta;
 }
 
 export type DuplicateCheckResult =
@@ -56,6 +89,39 @@ export interface AmbiguityResult {
 export interface CreateWordResult {
   wordId: string;
   status: 'PENDING';
+}
+
+export type ImportSkipReason =
+  | 'INVALID_TERM'
+  | 'DUPLICATE_IN_BATCH'
+  | 'ALREADY_EXISTS'
+  | 'DAILY_LIMIT_REACHED';
+
+export interface ImportSkip {
+  term: string;
+  reason: ImportSkipReason;
+  wordId?: string;
+  status?: WordStatus;
+}
+
+export interface ImportWordsResult {
+  batchId: string;
+  requestedCount: number;
+  accepted: Array<{ wordId: string; term: string; status: 'PENDING' | 'FAILED' }>;
+  skipped: ImportSkip[];
+}
+
+export interface ImportBatchStatus {
+  batchId: string;
+  requestedCount: number;
+  acceptedCount: number;
+  pendingCount: number;
+  officialCount: number;
+  failedCount: number;
+  progress: number;
+  status: 'PROCESSING' | 'COMPLETE' | 'COMPLETE_WITH_ERRORS';
+  words: Array<{ wordId: string; term: string; status: WordStatus }>;
+  skipped: ImportSkip[];
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

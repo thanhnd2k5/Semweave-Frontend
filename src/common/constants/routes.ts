@@ -2,7 +2,10 @@
 export const ROUTES = {
   home: '/',
   dashboard: '/dashboard',
+  words: '/words',
   wordsNew: '/words/new',
+  wordDetail: (wordId: string) => `/words/${encodeURIComponent(wordId)}`,
+  queue: '/queue',
   settings: '/settings',
   login: '/auth/login',
   register: '/auth/register',
@@ -18,7 +21,8 @@ export const PUBLIC_ROUTES: string[] = [
 /** Require authentication when FEATURE_AUTH=true */
 export const PROTECTED_ROUTES: string[] = [
   ROUTES.dashboard,
-  ROUTES.wordsNew,
+  ROUTES.words,
+  ROUTES.queue,
   ROUTES.settings,
 ];
 

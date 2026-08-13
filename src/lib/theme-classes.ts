@@ -30,6 +30,7 @@ export const theme = {
   errorText: 'text-error',
   errorBorder: 'border-error',
   errorSurface: 'rounded-md bg-error/10 px-4 py-2 text-sm text-error',
+  warnSurface: 'rounded-md bg-warm/15 px-4 py-3 text-sm text-warm',
   successText: 'text-success',
   successDot: 'size-2 rounded-full bg-success',
 

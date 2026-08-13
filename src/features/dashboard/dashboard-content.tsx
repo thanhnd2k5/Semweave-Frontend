@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/common/constants/routes';
 import { useAuth } from '@/features/_optional/auth/use-auth';
 import { theme } from '@/lib/theme-classes';
+import { BatchProgressBanner } from './batch-progress-banner';
 
 export function DashboardContent() {
   const t = useTranslations('dashboard');
@@ -14,7 +15,8 @@ export function DashboardContent() {
   const { user, logout, isAuthenticated } = useAuth();
 
   return (
-    <main className="flex flex-col gap-4">
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+      <BatchProgressBanner />
       <h1>{t('title')}</h1>
       {user ? <p>{t('welcome', { email: user.email })}</p> : null}
       <p className={theme.muted}>{t('placeholder')}</p>
@@ -30,6 +32,12 @@ export function DashboardContent() {
         </Link>
         <Link href={ROUTES.wordsNew} className={theme.link}>
           {t('addWord')}
+        </Link>
+        <Link href={ROUTES.words} className={theme.link}>
+          {t('wordLibrary')}
+        </Link>
+        <Link href={ROUTES.queue} className={theme.link}>
+          {t('queue')}
         </Link>
       </nav>
 

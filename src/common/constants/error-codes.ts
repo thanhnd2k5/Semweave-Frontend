@@ -11,6 +11,8 @@ export const ErrorCodes = {
   AI_PROVIDER_ERROR: 'AI_PROVIDER_ERROR',
   AI_UNAVAILABLE: 'AI_UNAVAILABLE',
   WORD_GENERATE_FAILED: 'WORD_GENERATE_FAILED',
+  QUEUE_FULL: 'QUEUE_FULL',
+  WORD_NOT_QUEUEABLE: 'WORD_NOT_QUEUEABLE',
 } as const;
 
 export type ErrorCode = (typeof ErrorCodes)[keyof typeof ErrorCodes];

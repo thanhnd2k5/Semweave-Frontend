@@ -15,7 +15,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Radio, RadioGroup } from '@/components/ui/RadioGroup';
 import { WordHealthBadge } from '@/components/ui/WordHealthBadge';
 import { Link } from '@/infrastructure/i18n/navigation';
+import { useQueryIdentity } from '@/hooks/use-query-identity';
 import { cn } from '@/lib/cn';
+import { privateQueryKeys } from '@/lib/private-query';
 import { theme } from '@/lib/theme-classes';
 import {
   checkDuplicate,
@@ -31,6 +33,7 @@ import {
   type AmbiguityResult,
   type WordDetail,
 } from './types';
+import { BatchImport } from './batch-import';
 
 type View =
   | { kind: 'editing' }
@@ -66,6 +69,7 @@ export function AddWordContent() {
   const tErrors = useTranslations('errors');
   const locale = useLocale();
   const queryClient = useQueryClient();
+  const queryIdentity = useQueryIdentity();
   const previewHeadingRef = useRef<HTMLHeadingElement>(null);
   const [term, setTerm] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -73,7 +77,7 @@ export function AddWordContent() {
 
   const pollWordId = view.kind === 'generating' ? view.wordId : null;
   const wordQuery = useQuery({
-    queryKey: ['words', 'detail', pollWordId],
+    queryKey: privateQueryKeys.wordDetail(queryIdentity, pollWordId),
     queryFn: () => getWord(pollWordId as string),
     enabled: pollWordId !== null,
     retry: 1,
@@ -97,6 +101,10 @@ export function AddWordContent() {
   }
 
   const previewWordId = displayView.kind === 'preview' ? displayView.word.id : null;
+  const settledWordId =
+    displayView.kind === 'preview' || displayView.kind === 'failed'
+      ? displayView.word.id
+      : null;
 
   useEffect(() => {
     if (previewWordId) {
@@ -104,13 +112,31 @@ export function AddWordContent() {
     }
   }, [previewWordId]);
 
+  useEffect(() => {
+    if (!settledWordId) return;
+    void queryClient.invalidateQueries({
+      queryKey: privateQueryKeys.wordList(queryIdentity),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: privateQueryKeys.queue(queryIdentity),
+    });
+  }, [queryClient, queryIdentity, settledWordId]);
+
   function resetToEditing() {
     setValidationError(null);
     setView({ kind: 'editing' });
   }
 
   function startPolling(wordId: string) {
-    queryClient.removeQueries({ queryKey: ['words', 'detail', wordId] });
+    queryClient.removeQueries({
+      queryKey: privateQueryKeys.wordDetail(queryIdentity, wordId),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: privateQueryKeys.wordList(queryIdentity),
+    });
+    void queryClient.invalidateQueries({
+      queryKey: privateQueryKeys.queue(queryIdentity),
+    });
     setView({ kind: 'generating', wordId });
   }
 
@@ -223,7 +249,12 @@ export function AddWordContent() {
       const result = await regenerateWord(wordId);
       startPolling(result.wordId);
     } catch (error) {
-      showRequestError(error);
+      const apiError = ApiError.fromUnknown(error);
+      if (apiError.code === ErrorCodes.DAILY_LIMIT_EXCEEDED) {
+        setView({ kind: 'limit', limit: getDailyLimit(apiError) });
+        return;
+      }
+      showRequestError(apiError);
     }
   }
 
@@ -319,6 +350,8 @@ export function AddWordContent() {
           {checkingLabel}
         </Button>
       </form>
+
+      {displayView.kind === 'editing' || displayView.kind === 'requestError' ? <BatchImport /> : null}
 
       {displayView.kind === 'duplicate' ? (
         <DuplicateModal
@@ -549,6 +582,9 @@ function PreviewState({
         <Button type="button" size="lg" disabled>
           {t('preview.quizSoon')}
         </Button>
+        <Link href={ROUTES.wordDetail(word.id)} className={theme.link}>
+          {t('preview.viewFull')}
+        </Link>
         <Link href={ROUTES.dashboard} className={theme.linkMuted}>
           {t('preview.backToDashboard')}
         </Link>

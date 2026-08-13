@@ -55,6 +55,7 @@ describe('proxy', () => {
     expect(isProxyPathAllowed('users/me')).toBe(true);
     expect(isProxyPathAllowed('words/check-duplicate')).toBe(true);
     expect(isProxyPathAllowed('words/word-1/retry')).toBe(true);
+    expect(isProxyPathAllowed('queue/process')).toBe(true);
     expect(isProxyPathAllowed('health')).toBe(true);
     expect(isProxyPathAllowed('')).toBe(true);
     expect(isProxyPathAllowed('admin/secret')).toBe(false);

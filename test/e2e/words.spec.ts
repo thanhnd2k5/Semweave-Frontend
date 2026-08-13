@@ -33,7 +33,7 @@ const officialWord = {
   shadows: [{ id: 'shadow-1', term: 'fleeting', status: 'SHADOW' }],
 };
 
-type Scenario = 'success' | 'ambiguous' | 'duplicate' | 'limit';
+type Scenario = 'success' | 'ambiguous' | 'duplicate' | 'regenerate-limit' | 'limit';
 
 async function mockApi(page: Page, scenario: Scenario) {
   let detailReads = 0;
@@ -67,7 +67,16 @@ async function mockApi(page: Page, scenario: Scenario) {
       return;
     }
     if (url.includes('/words/check-duplicate') && method === 'GET') {
-      await respond(scenario === 'duplicate' ? { exists: true, word: officialWord } : { exists: false });
+      await respond(
+        scenario === 'duplicate' || scenario === 'regenerate-limit'
+          ? {
+              exists: true,
+              word: scenario === 'regenerate-limit'
+                ? { ...officialWord, status: 'SHADOW' }
+                : officialWord,
+            }
+          : { exists: false },
+      );
       return;
     }
     if (url.includes('/words/detect-ambiguity') && method === 'POST') {
@@ -95,6 +104,13 @@ async function mockApi(page: Page, scenario: Scenario) {
         createdTerm = body.term;
       }
       await respond({ wordId: officialWord.id, status: 'PENDING' }, 202);
+      return;
+    }
+    if (url.endsWith(`/words/${officialWord.id}/regenerate`) && method === 'POST') {
+      await respond(
+        { code: 'DAILY_LIMIT_EXCEEDED', message: 'Limit reached', details: { limit: 3 } },
+        429,
+      );
       return;
     }
     if (url.includes(`/words/${officialWord.id}`) && method === 'GET') {
@@ -163,6 +179,15 @@ test.describe('words', () => {
     await loginAndOpenWords(page, 'limit');
     await page.getByLabel('Từ tiếng Anh').fill('ephemeral');
     await page.getByRole('button', { name: 'Thêm →' }).click();
+
+    await expect(page.getByText('Đã đạt giới hạn 3 từ/ngày hôm nay — quay lại vào ngày mai 🌙')).toBeVisible();
+  });
+
+  test('shows the same neutral boundary when regenerating a shadow at the limit', async ({ page }) => {
+    await loginAndOpenWords(page, 'regenerate-limit');
+    await page.getByLabel('Từ tiếng Anh').fill('ephemeral');
+    await page.getByRole('button', { name: 'Thêm →' }).click();
+    await page.getByRole('button', { name: 'Giải thích mới' }).click();
 
     await expect(page.getByText('Đã đạt giới hạn 3 từ/ngày hôm nay — quay lại vào ngày mai 🌙')).toBeVisible();
   });

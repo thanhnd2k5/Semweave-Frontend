@@ -22,6 +22,8 @@ describe('routes', () => {
   it('identifies protected routes', () => {
     expect(isProtectedRoute('/dashboard')).toBe(true);
     expect(isProtectedRoute('/words/new')).toBe(true);
+    expect(isProtectedRoute('/words/word-1')).toBe(true);
+    expect(isProtectedRoute('/queue')).toBe(true);
     expect(isProtectedRoute('/settings')).toBe(true);
     expect(isProtectedRoute('/auth/login')).toBe(false);
   });
@@ -31,6 +33,8 @@ describe('isSafePostLoginPath', () => {
   it('allows protected routes', () => {
     expect(isSafePostLoginPath('/dashboard')).toBe(true);
     expect(isSafePostLoginPath('/words/new')).toBe(true);
+    expect(isSafePostLoginPath('/words/word-1')).toBe(true);
+    expect(isSafePostLoginPath('/queue')).toBe(true);
     expect(isSafePostLoginPath('/settings')).toBe(true);
   });
 
