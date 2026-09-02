@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { ROUTES } from '@/common/constants/routes';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { useAuth } from '@/features/_optional/auth/use-auth';
 import { useQueryIdentity } from '@/hooks/use-query-identity';
 import { Link, useRouter } from '@/infrastructure/i18n/navigation';
 import { getWordContent } from '@/features/words/types';
@@ -16,7 +17,9 @@ import { privateQueryKeys } from '@/lib/private-query';
 import { theme } from '@/lib/theme-classes';
 import { listQueue, processQueue, removeQueueItem } from './api';
 import {
+  getDefaultQueueProcessCount,
   markQueueWordsPending,
+  QUEUE_PROCESS_COUNTS,
   shouldPollForQueueCount,
   shouldPollQueue,
   type QueuePollTarget,
@@ -32,9 +35,12 @@ export function QueueContent() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const queryIdentity = useQueryIdentity();
+  const { user } = useAuth();
   const pageParam = Number(searchParams.get('page') ?? '1');
   const page = Number.isInteger(pageParam) && pageParam > 0 ? pageParam : 1;
-  const [processCount, setProcessCount] = useState(3);
+  const [selectedProcessCount, setSelectedProcessCount] = useState<number | null>(null);
+  const processCount = selectedProcessCount
+    ?? getDefaultQueueProcessCount(user?.settings.dailyNewWordLimit ?? 3);
   const hadPendingItems = useRef(false);
   const postProcessPollTarget = useRef<QueuePollTarget | null>(null);
   const navigate = useCallback((nextPage: number) => {
@@ -148,8 +154,8 @@ export function QueueContent() {
         <section className={cn(theme.surface, 'flex flex-wrap items-end gap-4 p-4')}>
           <label className={cn('flex min-w-40 flex-col gap-1 text-sm font-medium', theme.muted)}>
             {t('processLabel')}
-            <select className={theme.input} value={processCount} onChange={(event) => setProcessCount(Number(event.target.value))}>
-              {[1, 2, 3, 5].map((count) => <option key={count} value={count}>{count}</option>)}
+            <select className={theme.input} value={processCount} onChange={(event) => setSelectedProcessCount(Number(event.target.value))}>
+              {QUEUE_PROCESS_COUNTS.map((count) => <option key={count} value={count}>{count}</option>)}
             </select>
           </label>
           <Button type="button" isLoading={processMutation.isPending} onClick={() => processMutation.mutate(processCount)}>
@@ -192,7 +198,7 @@ export function QueueContent() {
                     })}
                   </p>
                 </div>
-                <Button type="button" size="sm" variant="ghost" disabled={item.word.status === 'PENDING'} isLoading={removeMutation.isPending && removeMutation.variables === item.word.id} onClick={() => removeMutation.mutate(item.word.id)} aria-label={t('remove', { word: item.word.term })}>
+                <Button type="button" size="sm" variant="ghost" isLoading={removeMutation.isPending && removeMutation.variables === item.word.id} onClick={() => removeMutation.mutate(item.word.id)} aria-label={t('remove', { word: item.word.term })}>
                   {t('remove', { word: item.word.term })}
                 </Button>
               </li>

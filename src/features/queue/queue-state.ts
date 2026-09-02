@@ -1,8 +1,21 @@
 import type { QueueItem, QueueListResult } from './types';
 
+export const QUEUE_PROCESS_COUNTS = [1, 2, 3, 5] as const;
+
 export interface QueuePollTarget {
   count: number;
   expiresAt: number;
+}
+
+export function getDefaultQueueProcessCount(dailyNewWordLimit: number): number {
+  if (!Number.isFinite(dailyNewWordLimit)) return 3;
+
+  // The API requires at least one item; count=1 also lets a zero-limit user retry
+  // a FAILED word, which does not consume a new-word slot.
+  const upperBound = Math.max(1, Math.floor(dailyNewWordLimit));
+  return [...QUEUE_PROCESS_COUNTS]
+    .reverse()
+    .find((count) => count <= upperBound) ?? 1;
 }
 
 export function shouldPollQueue(

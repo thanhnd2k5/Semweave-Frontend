@@ -52,10 +52,14 @@
       "complete": "Đã thêm xong {count} từ.",
       "completeWithErrors": "Đã xử lý xong: {success} từ thành công, {failed} từ cần thử lại.",
       "nothingAccepted": "Không có từ mới nào được nhận.",
-      "skipped": "Bỏ qua {count} mục trùng hoặc vượt giới hạn.",
+      "skippedDuplicate": "Bỏ qua {count} mục trùng trong batch.",
+      "skippedExisting": "{count} từ đã có trong thư viện.",
+      "skippedQuota": "Để lại {count} từ vì đã đạt giới hạn hôm nay.",
+      "skippedInvalid": "Bỏ qua {count} mục không hợp lệ.",
       "viewWords": "Xem thư viện từ",
       "viewFailed": "Xem từ cần thử lại",
-      "loadError": "Không tải được tiến độ batch."
+      "loadError": "Không tải được tiến độ batch.",
+      "notAvailable": "Tiến độ batch này không còn khả dụng."
     }
   },
   "settings": {
@@ -128,6 +132,7 @@
       "attempts": "Đã ôn {count} lần · Streak {streak}",
       "quizPool": "Quiz đã chuẩn bị",
       "quizCount": "{count} câu (sắp dùng ở M3)",
+      "quizSoon": "Làm quiz thử (sắp có)",
       "related": "Từ liên quan",
       "addToQueue": "Thêm vào Queue",
       "addedToQueue": "Đã có trong Queue",

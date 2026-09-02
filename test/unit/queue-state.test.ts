@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getDefaultQueueProcessCount,
   markQueueWordsPending,
   shouldPollForQueueCount,
   shouldPollQueue,
@@ -24,6 +25,17 @@ function queueItem(status: QueueItem['word']['status']): QueueItem {
 }
 
 describe('queue polling state', () => {
+  it('uses the largest process option that does not exceed the daily setting', () => {
+    expect(getDefaultQueueProcessCount(1)).toBe(1);
+    expect(getDefaultQueueProcessCount(2)).toBe(2);
+    expect(getDefaultQueueProcessCount(4)).toBe(3);
+    expect(getDefaultQueueProcessCount(20)).toBe(5);
+  });
+
+  it('keeps the API minimum for a zero limit so failed words remain retryable', () => {
+    expect(getDefaultQueueProcessCount(0)).toBe(1);
+  });
+
   it('polls for pending server items and newly accepted items', () => {
     expect(shouldPollQueue([queueItem('PENDING')])).toBe(true);
     expect(shouldPollQueue([queueItem('SHADOW')])).toBe(false);

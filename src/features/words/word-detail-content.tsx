@@ -32,7 +32,8 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
   const [tagError, setTagError] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [queuedWordIds, setQueuedWordIds] = useState<Set<string>>(() => new Set());
-  const previousStatus = useRef<WordDetail['status'] | undefined>(undefined);
+  const previousStatus = useRef<WordDetail['status'] | 'LOADING'>('LOADING');
+  const terminalHeadingRef = useRef<HTMLHeadingElement>(null);
 
   const wordQuery = useQuery({
     queryKey: privateQueryKeys.wordDetail(queryIdentity, wordId),
@@ -103,7 +104,8 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
     const status = wordQuery.data?.status;
     if (!status) return;
 
-    if (previousStatus.current === 'PENDING' && status !== 'PENDING') {
+    const previous = previousStatus.current;
+    if (previous === 'PENDING' && status !== 'PENDING') {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.wordList(queryIdentity),
       });
@@ -112,6 +114,10 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
       });
     }
     previousStatus.current = status;
+
+    if (status !== 'PENDING' && (previous === 'LOADING' || previous === 'PENDING')) {
+      terminalHeadingRef.current?.focus({ preventScroll: true });
+    }
   }, [queryClient, queryIdentity, wordQuery.data?.status]);
 
   if (wordQuery.isPending) {
@@ -156,7 +162,7 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
       <main className="mx-auto flex w-full max-w-2xl flex-col gap-6">
         <Link href={ROUTES.words} className={theme.linkMuted}>← {t('back')}</Link>
         <section className={theme.errorSurface} role="alert">
-          <h1 className="m-0 text-title">{word.term}</h1>
+          <h1 ref={terminalHeadingRef} tabIndex={-1} className="m-0 text-title">{word.term}</h1>
           <h2 className="mt-3 mb-0 font-semibold">{t('failedTitle')}</h2>
           <p className="mt-2 mb-0">{t('failedBody')}</p>
         </section>
@@ -200,7 +206,7 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
       <section className={cn(theme.surface, 'flex flex-col gap-6 p-6')}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h1 className="m-0 text-display">{word.term}</h1>
+            <h1 ref={terminalHeadingRef} tabIndex={-1} className="m-0 text-display">{word.term}</h1>
             {content?.pronunciation ? <p className={cn('mt-2 mb-0', theme.muted)}>{content.pronunciation}</p> : null}
           </div>
           {word.status === 'SHADOW' ? <Badge variant="neutral">{t('statusShadow')}</Badge> : <WordHealthBadge level={toHealthLevel(word.health?.depthLevel)} />}
@@ -269,6 +275,9 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
           <section>
             <h2 className="text-title">{t('quizPool')}</h2>
             <p className={cn('mt-2 mb-0', theme.muted)}>{t('quizCount', { count: word.quizzes.length })}</p>
+            <Button type="button" className="mt-3" variant="secondary" disabled>
+              {t('quizSoon')}
+            </Button>
           </section>
         ) : null}
 

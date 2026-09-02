@@ -52,10 +52,14 @@
       "complete": "Finished adding {count} words.",
       "completeWithErrors": "Finished: {success} succeeded and {failed} need another try.",
       "nothingAccepted": "No new words were accepted.",
-      "skipped": "Skipped {count} duplicate or over-limit items.",
+      "skippedDuplicate": "Skipped {count} duplicate entries in this batch.",
+      "skippedExisting": "{count} words are already in your library.",
+      "skippedQuota": "Deferred {count} words because today's limit was reached.",
+      "skippedInvalid": "Skipped {count} invalid entries.",
       "viewWords": "View word library",
       "viewFailed": "View words to retry",
-      "loadError": "Could not load batch progress."
+      "loadError": "Could not load batch progress.",
+      "notAvailable": "This batch progress is no longer available."
     }
   },
   "settings": {
@@ -128,6 +132,7 @@
       "attempts": "Reviewed {count} times · Streak {streak}",
       "quizPool": "Prepared quizzes",
       "quizCount": "{count} questions (coming in M3)",
+      "quizSoon": "Try a quiz (coming soon)",
       "related": "Related words",
       "addToQueue": "Add to Queue",
       "addedToQueue": "Already in Queue",

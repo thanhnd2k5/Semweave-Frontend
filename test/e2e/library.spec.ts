@@ -8,7 +8,7 @@ const user = {
   email: 'phase-c@example.com',
   createdAt: '2026-01-01T00:00:00.000Z',
   settings: {
-    dailyNewWordLimit: 5,
+    dailyNewWordLimit: 2,
     sessionWordCount: 10,
     theme: 'dark',
     language: 'vi',
@@ -142,9 +142,29 @@ test.describe('phase C word library', () => {
     await page.getByRole('button', { name: 'Lưu tags' }).click();
     await expect(page.getByText('work', { exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Quiz đã chuẩn bị' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Làm quiz thử (sắp có)' })).toBeDisabled();
     await expect(page.getByRole('heading', { name: 'Từ liên quan' })).toBeVisible();
     await page.getByRole('button', { name: 'Thêm vào Queue' }).click();
     await expect(page.getByRole('button', { name: 'Đã có trong Queue' })).toBeVisible();
+  });
+
+  test('focuses the word heading when generation reaches a terminal state', async ({ page }) => {
+    await mockAuth(page);
+    let detailReads = 0;
+    await page.route(`${apiOrigin}/words/word-1`, async (route) => {
+      detailReads += 1;
+      await respond(
+        route,
+        detailReads === 1
+          ? { ...officialWord, status: 'PENDING', content: null, quizzes: [] }
+          : officialWord,
+      );
+    });
+    await login(page);
+
+    await page.goto('/vi/words/word-1');
+    await expect(page.getByText('Tồn tại trong thời gian rất ngắn.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'ephemeral', level: 1 })).toBeFocused();
   });
 
   test('imports a batch and follows durable progress on Dashboard', async ({ page }) => {
@@ -153,12 +173,16 @@ test.describe('phase C word library', () => {
     await page.route(`${apiOrigin}/words/import`, async (route) => {
       await respond(route, {
         batchId: 'batch-1',
-        requestedCount: 3,
+        requestedCount: 5,
         accepted: [
           { wordId: 'word-1', term: 'ephemeral', status: 'PENDING' },
           { wordId: 'word-2', term: 'transient', status: 'PENDING' },
         ],
-        skipped: [{ term: 'ephemeral', reason: 'DUPLICATE_IN_BATCH' }],
+        skipped: [
+          { term: 'ephemeral', reason: 'DUPLICATE_IN_BATCH' },
+          { term: 'fleeting', reason: 'ALREADY_EXISTS', wordId: 'shadow-1' },
+          { term: 'overflow', reason: 'DAILY_LIMIT_REACHED' },
+        ],
       }, 202);
     });
     await page.route(`${apiOrigin}/words/import/batch-1`, async (route) => {
@@ -166,7 +190,7 @@ test.describe('phase C word library', () => {
       const processing = batchReads === 1;
       await respond(route, {
         batchId: 'batch-1',
-        requestedCount: 3,
+        requestedCount: 5,
         acceptedCount: 2,
         pendingCount: processing ? 2 : 0,
         officialCount: processing ? 0 : 2,
@@ -174,18 +198,41 @@ test.describe('phase C word library', () => {
         progress: processing ? 0 : 100,
         status: processing ? 'PROCESSING' : 'COMPLETE',
         words: [],
-        skipped: [{ term: 'ephemeral', reason: 'DUPLICATE_IN_BATCH' }],
+        skipped: [
+          { term: 'ephemeral', reason: 'DUPLICATE_IN_BATCH' },
+          { term: 'fleeting', reason: 'ALREADY_EXISTS', wordId: 'shadow-1' },
+          { term: 'overflow', reason: 'DAILY_LIMIT_REACHED' },
+        ],
       });
     });
     await login(page);
 
     await page.goto('/vi/words/new');
     await page.getByRole('button', { name: 'Thêm nhiều từ cùng lúc? →' }).click();
-    await page.getByLabel('Danh sách từ tiếng Anh').fill('ephemeral\ntransient\nephemeral');
+    await page.getByLabel('Danh sách từ tiếng Anh').fill('ephemeral\ntransient\nephemeral\nfleeting\noverflow');
     await page.getByRole('button', { name: 'Thêm tất cả →' }).click();
     await expect(page).toHaveURL(/\/vi\/dashboard\?batch=batch-1/);
     await expect(page.getByText('Đã thêm xong 2 từ.')).toBeVisible();
-    await expect(page.getByText('Bỏ qua 1 mục trùng hoặc vượt giới hạn.')).toBeVisible();
+    await expect(page.getByText('Bỏ qua 1 mục trùng trong batch.')).toBeVisible();
+    await expect(page.getByText('1 từ đã có trong thư viện.')).toBeVisible();
+    await expect(page.getByText('Để lại 1 từ vì đã đạt giới hạn hôm nay.')).toBeVisible();
+  });
+
+  test('clears an unavailable batch id without breaking the Dashboard', async ({ page }) => {
+    await mockAuth(page);
+    await page.route(`${apiOrigin}/words/import/foreign-batch`, async (route) => {
+      await respond(route, { code: 'NOT_FOUND', message: 'Batch not found' }, 404);
+    });
+    await login(page);
+
+    await page.goto('/vi/dashboard?batch=foreign-batch&keep=1');
+    await expect(page).toHaveURL((url) => (
+      url.pathname === '/vi/dashboard'
+      && url.searchParams.get('batch') === null
+      && url.searchParams.get('keep') === '1'
+    ));
+    await expect(page.getByText('Tiến độ batch này không còn khả dụng.')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bảng điều khiển' })).toBeVisible();
   });
 
   test('processes the learning queue', async ({ page }) => {
@@ -230,10 +277,49 @@ test.describe('phase C word library', () => {
 
     await page.goto('/vi/queue');
     await expect(page.getByText('fleeting', { exact: true })).toBeVisible();
+    await expect(page.getByLabel('Số từ muốn bắt đầu')).toHaveValue('2');
     await page.getByRole('button', { name: 'Bắt đầu học' }).click();
     await expect(page.getByText('Đã nhận 1 từ · còn 2 slot hôm nay.')).toBeVisible();
     await expect(page.getByText('Đang tạo', { exact: true })).toBeVisible();
     await expect(page.getByText('Queue đang trống.')).toBeVisible({ timeout: 5000 });
+  });
+
+  test('removes a pending item when the Queue API allows it', async ({ page }) => {
+    await mockAuth(page);
+    let deleted = false;
+    await page.route(`${apiOrigin}/queue**`, async (route) => {
+      const url = new URL(route.request().url());
+      if (route.request().method() === 'DELETE' && url.pathname === '/queue/shadow-1') {
+        deleted = true;
+        await respond(route, { deleted: true });
+        return;
+      }
+      if (route.request().method() === 'GET' && url.pathname === '/queue') {
+        const items = deleted
+          ? []
+          : [{
+              id: 'queue-1',
+              priority: 0,
+              addedAt: '2026-01-01T00:00:00.000Z',
+              word: { id: 'shadow-1', term: 'fleeting', status: 'PENDING', content: null, tags: [], health: null },
+            }];
+        await respond(route, {
+          items,
+          meta: { total: items.length, page: 1, pageSize: 20, totalPages: items.length ? 1 : 0 },
+          summary: { count: items.length, warningThreshold: 50, maxSize: 100 },
+        });
+        return;
+      }
+      await route.fallback();
+    });
+    await login(page);
+
+    await page.goto('/vi/queue');
+    const removeButton = page.getByRole('button', { name: 'Bỏ fleeting khỏi Queue' });
+    await expect(removeButton).toBeEnabled();
+    await removeButton.click();
+    await expect(page.getByText('Queue đang trống.')).toBeVisible();
+    expect(deleted).toBe(true);
   });
 
   test('deletes a failed word from its detail page', async ({ page }) => {
