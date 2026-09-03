@@ -6,7 +6,7 @@ Workspace: xem [README gốc](../README.md) và [docs/STATUS.md](../docs/STATUS.
 
 ## Quick start
 
-Requires [pnpm](https://pnpm.io/installation) 10+ và Node 20 (`.nvmrc` ở workspace root).
+Requires [pnpm](https://pnpm.io/installation) 10+ và Node 26 (`.nvmrc` ở workspace root; cùng major với CI).
 
 ```bash
 corepack enable

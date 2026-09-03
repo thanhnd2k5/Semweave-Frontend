@@ -6,7 +6,7 @@
   "license": "MIT",
   "packageManager": "pnpm@10.34.4",
   "engines": {
-    "node": ">=20"
+    "node": ">=26 <27"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
@@ -42,7 +42,7 @@
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.3.2",
     "@types/jsdom": "^27.0.0",
-    "@types/node": "^20",
+    "@types/node": "^26.4.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.2",
