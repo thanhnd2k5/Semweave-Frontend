@@ -6,8 +6,16 @@ import {
   initialMachineState,
   reduceSession,
   type SessionMachineState,
+  type SessionPhase,
 } from './engine/session-machine';
-import { idleTimer, readElapsed, resetTimer, startTimer, stopTimer } from './engine/active-timer';
+import {
+  addQuestionToSession,
+  freezeTimer,
+  idleTimer,
+  resetTimer,
+  startTimer,
+  stopTimer,
+} from './engine/active-timer';
 import { createSession, getSession } from './api';
 import type { SessionRepository } from './offline/session-repository';
 import type {
@@ -19,6 +27,7 @@ import type {
   SessionSnapshotRecord,
   StoredSessionAttempt,
   TimerSnapshot,
+  LocalSessionStatus,
 } from './types';
 
 export type Clock = {
@@ -79,12 +88,23 @@ function restoreRuntime(
     );
   }
 
+  const frozen = freezeTimer(snapshot.timer);
   const timer =
     machine.phase === 'question' && snapshot.localStatus === 'IN_PROGRESS'
-      ? startTimer(snapshot.timer, now)
-      : { elapsedMs: snapshot.timer.elapsedMs, runningSince: null };
+      ? startTimer(frozen, now)
+      : frozen;
 
   return { snapshot: { ...snapshot, timer }, attempts, machine, timer };
+}
+
+export function canAbandonSession(input: {
+  localStatus: LocalSessionStatus;
+  phase: SessionPhase;
+  completing: boolean;
+}): boolean {
+  if (input.completing) return false;
+  if (input.phase === 'summary') return false;
+  return input.localStatus === 'IN_PROGRESS';
 }
 
 export async function cacheCreatedSession(
@@ -168,14 +188,14 @@ export async function submitAnswer(
   }
 
   const now = clock.now();
-  const stopped = stopTimer(runtime.timer, now);
+  const stopped = addQuestionToSession(stopTimer(runtime.timer, now));
   const localGrade = gradeLocalAnswer(question, answer);
   const attempt = {
     clientAttemptId: clock.id?.() ?? newId(),
     sessionQuestionId: question.id,
     sequence: runtime.attempts.length,
     answer,
-    responseTimeMs: Math.min(1_800_000, readElapsed(runtime.timer, now)),
+    responseTimeMs: Math.min(1_800_000, stopped.elapsedMs),
     attemptedAt: toIso(now),
   };
 
@@ -214,7 +234,10 @@ export async function advanceQuestion(
     { type: 'NEXT', totalQuestions: runtime.snapshot.bundle.questions.length },
     runtime.snapshot.bundle.questions,
   );
-  const timer = machine.phase === 'question' ? resetTimer(now) : stopTimer(runtime.timer, now);
+  const timer =
+    machine.phase === 'question'
+      ? resetTimer(now, runtime.timer.sessionElapsedMs ?? 0)
+      : stopTimer(runtime.timer, now);
   await repo.updateCursorAndTimer({
     ownerId: runtime.snapshot.ownerId,
     sessionId: runtime.snapshot.sessionId,
@@ -259,6 +282,55 @@ export async function queueSessionFinalization(
     now,
     nowIso: toIso(now),
   });
+}
+
+export async function pauseForegroundTimer(
+  repo: SessionRepository,
+  runtime: SessionRuntime,
+  clock: Clock = { now: Date.now },
+): Promise<SessionRuntime> {
+  if (runtime.machine.phase !== 'question' || runtime.timer.runningSince === null) {
+    return runtime;
+  }
+  const now = clock.now();
+  const timer = stopTimer(runtime.timer, now);
+  await repo.updateCursorAndTimer({
+    ownerId: runtime.snapshot.ownerId,
+    sessionId: runtime.snapshot.sessionId,
+    cursor: runtime.machine.cursor,
+    timer,
+    nowIso: toIso(now),
+  });
+  return {
+    ...runtime,
+    snapshot: { ...runtime.snapshot, timer, updatedAt: toIso(now) },
+    timer,
+  };
+}
+
+export async function resumeForegroundTimer(
+  repo: SessionRepository,
+  runtime: SessionRuntime,
+  clock: Clock = { now: Date.now },
+): Promise<SessionRuntime> {
+  if (runtime.machine.phase !== 'question' || runtime.snapshot.localStatus !== 'IN_PROGRESS') {
+    return runtime;
+  }
+  if (runtime.timer.runningSince !== null) return runtime;
+  const now = clock.now();
+  const timer = startTimer(freezeTimer(runtime.timer), now);
+  await repo.updateCursorAndTimer({
+    ownerId: runtime.snapshot.ownerId,
+    sessionId: runtime.snapshot.sessionId,
+    cursor: runtime.machine.cursor,
+    timer,
+    nowIso: toIso(now),
+  });
+  return {
+    ...runtime,
+    snapshot: { ...runtime.snapshot, timer, updatedAt: toIso(now) },
+    timer,
+  };
 }
 
 export { idleTimer };

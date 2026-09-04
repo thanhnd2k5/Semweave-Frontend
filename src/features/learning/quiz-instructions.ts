@@ -5,7 +5,7 @@ export const QUIZ_INSTRUCTION_KEYS: Record<QuizType, string> = {
   DEFINITION_MATCH: 'instructionDefinition',
   REVERSE_RECALL: 'instructionReverse',
   CONTEXT_SELECTION: 'instructionContext',
-  NUANCE: 'instructionNuance',
+  NUANCE_COMPARISON: 'instructionNuance',
 };
 
 export const MIN_TRIAL_QUIZ_COUNT = 3;

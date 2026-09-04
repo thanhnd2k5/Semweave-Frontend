@@ -1,5 +1,4 @@
 import type { SessionRepository } from './session-repository';
-import type { SessionSyncOperation } from '../types';
 
 const LOCK_PREFIX = 'semweave-sync';
 const LEASE_MS = 15_000;
@@ -34,32 +33,18 @@ async function withDexieLease<T>(
 ): Promise<T | null> {
   const now = clock.now();
   const leaseOwner = clock.randomId?.() ?? `lease-${now}`;
-  const operation = await repo.loadSyncOperation(ownerId, sessionId);
-  if (!operation) {
-    return task();
-  }
-  if (
-    operation.leaseOwner &&
-    operation.leaseExpiresAt &&
-    operation.leaseExpiresAt > now &&
-    operation.leaseOwner !== leaseOwner
-  ) {
-    return null;
-  }
-
-  const leased: SessionSyncOperation = {
-    ...operation,
+  const acquired = await repo.tryAcquireLease({
+    ownerId,
+    sessionId,
     leaseOwner,
-    leaseExpiresAt: now + LEASE_MS,
-  };
-  await repo.saveLease(leased);
+    now,
+    leaseMs: LEASE_MS,
+  });
+  if (!acquired) return null;
   try {
     return await task();
   } finally {
-    const latest = await repo.loadSyncOperation(ownerId, sessionId);
-    if (latest && latest.leaseOwner === leaseOwner) {
-      await repo.saveLease({ ...latest, leaseOwner: null, leaseExpiresAt: null });
-    }
+    await repo.releaseLease(ownerId, sessionId, leaseOwner);
   }
 }
 

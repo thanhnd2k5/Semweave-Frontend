@@ -21,7 +21,10 @@ import { processSyncOperation } from './offline/sync-worker';
 import {
   advanceQuestion,
   bootstrapSession,
+  canAbandonSession,
+  pauseForegroundTimer,
   queueSessionFinalization,
+  resumeForegroundTimer,
   submitAnswer,
   type SessionRuntime,
 } from './session-runtime';
@@ -102,10 +105,6 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
   }, [runtime]);
 
   useEffect(() => {
-    busyRef.current = busy;
-  }, [busy]);
-
-  useEffect(() => {
     if (ownerId === ANONYMOUS_QUERY_IDENTITY) return;
     let cancelled = false;
     void bootstrapSession(repo, ownerId, sessionId)
@@ -130,6 +129,7 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
       const question = current.snapshot.bundle.questions[current.machine.cursor];
       if (!question || current.machine.phase !== 'question') return;
       if (question.type === 'FILL_IN_BLANK' && draft.trim().length === 0) return;
+      busyRef.current = true;
       setBusy(true);
       try {
         const next = await submitAnswer(repo, current, toAnswer(question, draft));
@@ -139,6 +139,7 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
           setError(cause instanceof Error ? cause.message : t('saveError'));
         }
       } finally {
+        busyRef.current = false;
         setBusy(false);
       }
     },
@@ -148,11 +149,14 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
   const onNext = useCallback(async () => {
     const current = runtimeRef.current;
     if (!current || busyRef.current || current.machine.phase !== 'feedback') return;
+    busyRef.current = true;
     setBusy(true);
     try {
       const next = await advanceQuestion(repo, current);
+      runtimeRef.current = next;
       setRuntime(next);
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }, [repo]);
@@ -180,12 +184,31 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
     async (endpoint: 'COMPLETE' | 'ABANDON') => {
       const current = runtimeRef.current;
       if (!current) return;
+      if (endpoint === 'ABANDON') {
+        if (
+          !canAbandonSession({
+            localStatus: current.snapshot.localStatus,
+            phase: current.machine.phase,
+            completing: completingRef.current,
+          })
+        ) {
+          void invalidateLearningStats(queryClient, ownerId);
+          router.replace(ROUTES.dashboard);
+          return;
+        }
+      }
+      if (busyRef.current) return;
+      busyRef.current = true;
+      completingRef.current = true;
       setBusy(true);
       try {
         await queueSessionFinalization(repo, current, endpoint);
         completingRef.current = true;
         pendingSyncTriedRef.current = true;
-        await processSyncOperation(ownerId, sessionId, { repo });
+        const canSyncNow = typeof navigator === 'undefined' || navigator.onLine;
+        if (canSyncNow) {
+          await processSyncOperation(ownerId, sessionId, { repo });
+        }
         if (endpoint === 'ABANDON') {
           void invalidateLearningStats(queryClient, ownerId);
           router.replace(ROUTES.dashboard);
@@ -197,6 +220,7 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
         const apiError = ApiError.fromUnknown(cause);
         setError(translateApiError(tErrors, apiError.code, t('finishError')));
       } finally {
+        busyRef.current = false;
         setBusy(false);
       }
     },
@@ -205,11 +229,13 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
 
   const onRetrySync = useCallback(async () => {
     pendingSyncTriedRef.current = true;
+    busyRef.current = true;
     setBusy(true);
     try {
       await processSyncOperation(ownerId, sessionId, { repo });
       await refreshAfterSync();
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   }, [ownerId, refreshAfterSync, repo, sessionId]);
@@ -218,17 +244,25 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
     if (!runtime) return;
     if (runtime.machine.phase !== 'summary') return;
     if (runtime.snapshot.localStatus !== 'IN_PROGRESS') return;
-    if (completingRef.current) return;
-    completingRef.current = true;
+    if (completingRef.current || busy) return;
     void onFinalize('COMPLETE');
-  }, [onFinalize, runtime]);
+  }, [busy, onFinalize, runtime]);
 
   useEffect(() => {
     if (!runtime?.snapshot.localStatus.startsWith('PENDING')) return;
     if (pendingSyncTriedRef.current) return;
+    if (typeof navigator !== 'undefined' && !navigator.onLine) return;
     pendingSyncTriedRef.current = true;
     void processSyncOperation(ownerId, sessionId, { repo }).then(() => refreshAfterSync());
   }, [ownerId, refreshAfterSync, repo, runtime?.snapshot.localStatus, sessionId]);
+
+  useEffect(() => {
+    function onOnline() {
+      void processSyncOperation(ownerId, sessionId, { repo }).then(() => refreshAfterSync());
+    }
+    window.addEventListener('online', onOnline);
+    return () => window.removeEventListener('online', onOnline);
+  }, [ownerId, refreshAfterSync, repo, sessionId]);
 
   useEffect(() => {
     if (runtime?.machine.phase !== 'feedback') return;
@@ -253,6 +287,35 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onFinalize, onNext]);
+
+  useEffect(() => {
+    function persist(next: SessionRuntime) {
+      if (runtimeRef.current?.snapshot.sessionId === next.snapshot.sessionId) {
+        runtimeRef.current = next;
+        setRuntime(next);
+      }
+    }
+    function pause() {
+      const current = runtimeRef.current;
+      if (!current) return;
+      void pauseForegroundTimer(repo, current).then(persist);
+    }
+    function resume() {
+      const current = runtimeRef.current;
+      if (!current) return;
+      void resumeForegroundTimer(repo, current).then(persist);
+    }
+    function onVisibility() {
+      if (document.hidden) pause();
+      else resume();
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('pagehide', pause);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('pagehide', pause);
+    };
+  }, [repo]);
 
   if (error) {
     return (
@@ -282,7 +345,7 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
   const totalQuestions = runtime.snapshot.bundle.totalQuestions;
   const answeredCount = runtime.machine.answeredQuestionIds.length;
   const isLast = answeredCount >= totalQuestions;
-  const elapsedMs = canonical?.durationMs ?? runtime.snapshot.timer.elapsedMs;
+  const elapsedMs = canonical?.durationMs ?? runtime.snapshot.timer.sessionElapsedMs ?? 0;
   const trialWordId = runtime.snapshot.bundle.questions[0]?.word.id;
 
   return (
@@ -330,6 +393,7 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
           failedHint={t('syncFailed')}
           improvedLabel={t('improved')}
           reviewLabel={t('review')}
+          leveledUpLabel={t('leveledUp')}
           nextDueLabel={
             canonical?.nextDueAt
               ? t('nextDue', { time: formatRelativeDue(canonical.nextDueAt, locale) })

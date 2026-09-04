@@ -21,6 +21,8 @@ export function LearningSyncProvider({ children }: LearningSyncProviderProps) {
     if (identity === ANONYMOUS_QUERY_IDENTITY) return;
     void scanAndProcessDueSync({
       repo: getSessionRepository(),
+      ownerId: identity,
+      ignoreRetryAt: true,
       isOnline: () => (typeof navigator === 'undefined' ? true : navigator.onLine),
     }).then((synced) => {
       if (synced) {

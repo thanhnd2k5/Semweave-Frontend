@@ -1,4 +1,5 @@
 export const GRADING_VERSION = 1 as const;
+export const FILL_IN_ANSWER_MAX_LENGTH = 200;
 
 export type FillInGradeResult = {
   isCorrect: boolean;
@@ -37,6 +38,10 @@ export function gradeFillInBlank(input: {
   correctAnswer: string;
   acceptedVariants?: string[];
 }): FillInGradeResult {
+  if (input.userAnswer.length > FILL_IN_ANSWER_MAX_LENGTH) {
+    return { isCorrect: false, matchedVariant: null, gradingVersion: GRADING_VERSION };
+  }
+
   const normalizedUser = normalizeAnswer(input.userAnswer);
   if (normalizedUser.length === 0) {
     return { isCorrect: false, matchedVariant: null, gradingVersion: GRADING_VERSION };

@@ -3,7 +3,7 @@ export type QuizType =
   | 'DEFINITION_MATCH'
   | 'REVERSE_RECALL'
   | 'CONTEXT_SELECTION'
-  | 'NUANCE';
+  | 'NUANCE_COMPARISON';
 
 export type StudySessionType = 'DUE_TODAY' | 'WORD_TRIAL';
 
@@ -145,6 +145,7 @@ export type StoredSessionAttempt = SessionAttempt & {
 export type TimerSnapshot = {
   elapsedMs: number;
   runningSince: number | null;
+  sessionElapsedMs: number;
 };
 
 export type SessionSnapshotRecord = {

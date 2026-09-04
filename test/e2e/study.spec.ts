@@ -34,7 +34,7 @@ const word = {
   quizzes: [
     { id: 'quiz-1', type: 'DEFINITION_MATCH', difficulty: 1 },
     { id: 'quiz-2', type: 'FILL_IN_BLANK', difficulty: 1 },
-    { id: 'quiz-3', type: 'NUANCE', difficulty: 2 },
+    { id: 'quiz-3', type: 'NUANCE_COMPARISON', difficulty: 2 },
   ],
   shadows: [],
 };
@@ -88,7 +88,7 @@ function questions(clientSessionId: string) {
         id: 'q3',
         position: 2,
         word: { id: word.id, term: word.term, depthLevel: 1 },
-        type: 'NUANCE',
+        type: 'NUANCE_COMPARISON',
         question: 'Which sentence uses the word most naturally?',
         contextLabel: null,
         options: [
@@ -119,7 +119,57 @@ function questions(clientSessionId: string) {
   };
 }
 
-function summary() {
+function fiveTypeQuestions(clientSessionId: string) {
+  const trial = questions(clientSessionId);
+  const wordRef = { id: word.id, term: word.term, depthLevel: 1 };
+  const englishOptions = [
+    { id: 'option_a', text: 'lasting' },
+    { id: 'option_b', text: 'ephemeral' },
+    { id: 'option_c', text: 'heavy' },
+    { id: 'option_d', text: 'ancient' },
+  ];
+  return {
+    ...trial,
+    type: 'DUE_TODAY',
+    totalWords: 1,
+    totalQuestions: 5,
+    questions: [
+      trial.questions[0],
+      {
+        id: 'q-reverse',
+        position: 1,
+        word: wordRef,
+        type: 'REVERSE_RECALL',
+        question: 'Tồn tại trong thời gian rất ngắn.',
+        contextLabel: null,
+        options: englishOptions,
+        correctAnswer: 'ephemeral',
+        acceptedVariants: [],
+        explanation: 'The Vietnamese gloss maps to ephemeral.',
+        difficulty: 1,
+        gradingVersion: 1,
+      },
+      {
+        id: 'q-context',
+        position: 2,
+        word: wordRef,
+        type: 'CONTEXT_SELECTION',
+        question: 'The beauty of the sunset was ______.',
+        contextLabel: null,
+        options: englishOptions,
+        correctAnswer: 'ephemeral',
+        acceptedVariants: [],
+        explanation: 'The sentence needs ephemeral.',
+        difficulty: 1,
+        gradingVersion: 1,
+      },
+      { ...trial.questions[2], id: 'q-nuance', position: 3 },
+      { ...trial.questions[1], id: 'q-fill', position: 4 },
+    ],
+  };
+}
+
+function summary(overrides: Record<string, unknown> = {}) {
   return {
     sessionId,
     type: 'WORD_TRIAL',
@@ -145,6 +195,7 @@ function summary() {
     skippedAttempts: [],
     nextDueAt: '2026-09-05T12:00:00.000Z',
     syncedAt: '2026-09-04T12:10:00.000Z',
+    ...overrides,
   };
 }
 
@@ -156,7 +207,15 @@ async function respond(route: Route, data: unknown, status = 200) {
   });
 }
 
-async function mockStudyApi(page: Page) {
+async function mockStudyApi(
+  page: Page,
+  options: {
+    onComplete?: (route: Route) => Promise<boolean>;
+    sessionBundle?: (clientSessionId: string) => unknown;
+    stats?: Record<string, unknown>;
+  } = {},
+) {
+  let lastBundle: unknown;
   await page.route(`${apiOrigin}/**`, async (route) => {
     const url = route.request().url();
     const method = route.request().method();
@@ -179,16 +238,31 @@ async function mockStudyApi(page: Page) {
       return;
     }
     if (url.includes('/sessions/stats') && method === 'GET') {
-      await respond(route, {
-        asOf: '2026-09-04T00:00:00.000Z',
-        dueTodayCount: 0,
-        nextDueAt: null,
-        totalLearningWords: 1,
-        queueCount: 0,
-        graduatedCount: 0,
-        sessionWordCount: 10,
-        dailyNewWordLimit: { limit: 3, used: 0, remaining: 3 },
-      });
+      await respond(
+        route,
+        options.stats ?? {
+          asOf: '2026-09-04T00:00:00.000Z',
+          dueTodayCount: 0,
+          nextDueAt: null,
+          totalLearningWords: 1,
+          queueCount: 0,
+          graduatedCount: 0,
+          sessionWordCount: 10,
+          dailyNewWordLimit: { limit: 3, used: 0, remaining: 3 },
+        },
+      );
+      return;
+    }
+    if (url.includes('/words/check-duplicate') && method === 'GET') {
+      await respond(route, { exists: false });
+      return;
+    }
+    if (url.includes('/words/detect-ambiguity') && method === 'POST') {
+      await respond(route, { ambiguous: false });
+      return;
+    }
+    if (url.endsWith('/words') && method === 'POST') {
+      await respond(route, { wordId: word.id, status: 'PENDING' }, 202);
       return;
     }
     if (url.includes(`/words/${word.id}`) && method === 'GET') {
@@ -197,15 +271,33 @@ async function mockStudyApi(page: Page) {
     }
     if (url.endsWith('/sessions') && method === 'POST') {
       const body = route.request().postDataJSON() as { clientSessionId: string };
-      await respond(route, questions(body.clientSessionId));
+      lastBundle = options.sessionBundle?.(body.clientSessionId) ?? questions(body.clientSessionId);
+      await respond(route, lastBundle);
       return;
     }
     if (url.includes(`/sessions/${sessionId}/complete`) && method === 'POST') {
-      await respond(route, summary());
+      if (options.onComplete && (await options.onComplete(route))) {
+        return;
+      }
+      const bundle = lastBundle as { type?: string; totalQuestions?: number; totalWords?: number } | undefined;
+      await respond(
+        route,
+        summary({
+          type: bundle?.type ?? 'WORD_TRIAL',
+          totalQuestions: bundle?.totalQuestions ?? 3,
+          totalWords: bundle?.totalWords ?? 1,
+          answeredCount: bundle?.totalQuestions ?? 3,
+          correctCount: bundle?.totalQuestions ?? 3,
+        }),
+      );
+      return;
+    }
+    if (url.includes(`/sessions/${sessionId}/abandon`) && method === 'POST') {
+      await respond(route, { ...summary(), status: 'ABANDONED' });
       return;
     }
     if (url.includes(`/sessions/${sessionId}`) && method === 'GET') {
-      await respond(route, questions('11111111-1111-4111-8111-111111111111'));
+      await respond(route, lastBundle ?? questions('11111111-1111-4111-8111-111111111111'));
       return;
     }
     await route.fallback();
@@ -261,7 +353,280 @@ test.describe('M3-F word trial', () => {
 
     await expect(page.getByRole('heading', { name: 'Session hoàn thành!' })).toBeVisible();
     await expect(page.getByText(/1 từ · 100% đúng/)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Home' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Trang chủ' })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Xem chi tiết từ' })).toBeVisible();
+  });
+
+  test('submits with 1–4 and Enter, while arrows only move focus', async ({ page }) => {
+    await mockStudyApi(page);
+    await login(page);
+    await page.goto(`/vi/words/${word.id}`);
+    await page.getByRole('button', { name: 'Làm quiz thử' }).click();
+    await expect(page.getByText('Từ nào có nghĩa:')).toBeVisible();
+    await page.keyboard.press('ArrowDown');
+    await expect(page.getByTestId('quiz-feedback')).toHaveCount(0);
+    await page.keyboard.press('2');
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).press('Enter');
+    await expect(page.getByText('Điền từ thích hợp vào chỗ trống')).toBeVisible();
+    await page.getByLabel('Từ của bạn').fill('ephemeral');
+    await page.getByRole('button', { name: 'Kiểm tra →' }).click();
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).press('Enter');
+    await expect(
+      page.getByText('Câu nào dùng từ CHÍNH XÁC và TỰ NHIÊN nhất trong ngữ cảnh này?'),
+    ).toBeVisible();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('quiz-feedback')).toHaveCount(0);
+    await page.keyboard.press('1');
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Xem kết quả →' }).press('Enter');
+    await expect(page.getByRole('heading', { name: 'Session hoàn thành!' })).toBeVisible();
+  });
+
+  test('does not POST complete between questions, then finalizes once', async ({ page }) => {
+    const completes: string[] = [];
+    await mockStudyApi(page);
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().includes('/complete')) {
+        completes.push(request.url());
+      }
+    });
+    await login(page);
+    await page.goto(`/vi/words/${word.id}`);
+    await page.getByRole('button', { name: 'Làm quiz thử' }).click();
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    expect(completes).toEqual([]);
+    await page.getByLabel('Từ của bạn').fill('ephemeral');
+    await page.getByRole('button', { name: 'Kiểm tra →' }).click();
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await expect(
+      page.getByText('Câu nào dùng từ CHÍNH XÁC và TỰ NHIÊN nhất trong ngữ cảnh này?'),
+    ).toBeVisible();
+    await page.keyboard.press('1');
+    expect(completes).toEqual([]);
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Xem kết quả →' }).click();
+    await expect(page.getByRole('heading', { name: 'Session hoàn thành!' })).toBeVisible();
+    await expect.poll(() => completes.length).toBe(1);
+  });
+
+  test('reloads mid-session without changing options or leaking the next explanation', async ({
+    page,
+  }) => {
+    await mockStudyApi(page);
+    await login(page);
+    await page.goto(`/vi/words/${word.id}`);
+    await page.getByRole('button', { name: 'Làm quiz thử' }).click();
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.reload();
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await expect(page.getByText('It means short-lived.')).toBeVisible();
+    await expect(page.getByText('The blank takes ephemeral.')).toHaveCount(0);
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await expect(page.getByText('Điền từ thích hợp vào chỗ trống')).toBeVisible();
+    await expect(page.getByText('The blank takes ephemeral.')).toHaveCount(0);
+  });
+
+  test('Escape abandons a partial session and returns to the dashboard', async ({ page }) => {
+    await mockStudyApi(page);
+    await login(page);
+    await page.goto(`/vi/words/${word.id}`);
+    await page.getByRole('button', { name: 'Làm quiz thử' }).click();
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page).toHaveURL(/\/vi\/dashboard/);
+  });
+
+  test('continues offline after the bundle is cached, then syncs once online', async ({
+    page,
+    context,
+  }) => {
+    const completes: string[] = [];
+    await mockStudyApi(page);
+    page.on('response', (response) => {
+      if (
+        response.request().method() === 'POST' &&
+        response.url().includes('/complete') &&
+        response.ok()
+      ) {
+        completes.push(response.url());
+      }
+    });
+    await login(page);
+    await page.goto(`/vi/words/${word.id}`);
+    await page.getByRole('button', { name: 'Làm quiz thử' }).click();
+    await expect(page.getByRole('progressbar')).toBeVisible();
+    await context.setOffline(true);
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await page.getByLabel('Từ của bạn').fill('ephemeral');
+    await page.getByRole('button', { name: 'Kiểm tra →' }).click();
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await expect(
+      page.getByText('Câu nào dùng từ CHÍNH XÁC và TỰ NHIÊN nhất trong ngữ cảnh này?'),
+    ).toBeVisible();
+    await page.keyboard.press('1');
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Xem kết quả →' }).click();
+    await expect(page.getByRole('heading', { name: 'Session hoàn thành!' })).toBeVisible();
+    expect(completes).toEqual([]);
+    await context.setOffline(false);
+    await expect.poll(() => completes.length).toBe(1);
+  });
+
+  test('retries a lost complete response without duplicating the request after success', async ({
+    page,
+  }) => {
+    let attempts = 0;
+    await mockStudyApi(page, {
+      onComplete: async (route) => {
+        attempts += 1;
+        if (attempts === 1) {
+          await route.abort('failed');
+          return true;
+        }
+        return false;
+      },
+    });
+    await login(page);
+    await page.goto(`/vi/words/${word.id}`);
+    await page.getByRole('button', { name: 'Làm quiz thử' }).click();
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await page.getByLabel('Từ của bạn').fill('ephemeral');
+    await page.getByRole('button', { name: 'Kiểm tra →' }).click();
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await expect(
+      page.getByText('Câu nào dùng từ CHÍNH XÁC và TỰ NHIÊN nhất trong ngữ cảnh này?'),
+    ).toBeVisible();
+    await page.keyboard.press('1');
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Xem kết quả →' }).click();
+    await expect(page.getByRole('button', { name: 'Thử đồng bộ lại' })).toBeVisible();
+    await page.getByRole('button', { name: 'Thử đồng bộ lại' }).click();
+    await expect(page.getByRole('heading', { name: 'Session hoàn thành!' })).toBeVisible();
+    await expect.poll(() => attempts).toBe(2);
+  });
+
+  test('starts a trial from add-word preview', async ({ page }) => {
+    await mockStudyApi(page);
+    await login(page);
+    await page.goto('/vi/words/new');
+    await page.getByLabel('Từ tiếng Anh').fill('ephemeral');
+    await page.getByRole('button', { name: 'Thêm →' }).click();
+    await expect(page.getByRole('heading', { name: "✅ 'ephemeral' đã sẵn sàng!" })).toBeVisible();
+    const trial = page.getByRole('button', { name: 'Làm quiz thử' });
+    await expect(trial).toBeEnabled();
+    await trial.click();
+    await expect(page).toHaveURL(new RegExp(`/vi/study/${sessionId}`));
+    await expect(page.getByText('Từ nào có nghĩa:')).toBeVisible();
+  });
+
+  test('covers all five quiz types from Due Today', async ({ page }) => {
+    await mockStudyApi(page, {
+      stats: {
+        asOf: '2026-09-04T00:00:00.000Z',
+        dueTodayCount: 5,
+        nextDueAt: null,
+        totalLearningWords: 5,
+        queueCount: 0,
+        graduatedCount: 0,
+        sessionWordCount: 10,
+        dailyNewWordLimit: { limit: 3, used: 0, remaining: 3 },
+      },
+      sessionBundle: (clientSessionId) => fiveTypeQuestions(clientSessionId),
+    });
+    await login(page);
+    await page.getByRole('button', { name: 'Bắt đầu ôn →' }).click();
+    await expect(page.getByText('Từ nào có nghĩa:')).toBeVisible();
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await expect(page.getByText('Chọn từ tiếng Anh phù hợp nhất')).toBeVisible();
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await expect(page.getByText('Chọn từ điền vào chỗ trống phù hợp nhất')).toBeVisible();
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await expect(
+      page.getByText('Câu nào dùng từ CHÍNH XÁC và TỰ NHIÊN nhất trong ngữ cảnh này?'),
+    ).toBeVisible();
+    await page.keyboard.press('1');
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await expect(page.getByText('Điền từ thích hợp vào chỗ trống')).toBeVisible();
+    await page.getByLabel('Từ của bạn').fill('ephemeral');
+    await page.getByRole('button', { name: 'Kiểm tra →' }).click();
+    await expect(page.getByTestId('quiz-feedback')).toBeVisible();
+    await page.getByRole('button', { name: 'Xem kết quả →' }).click();
+    await expect(page.getByRole('heading', { name: 'Session hoàn thành!' })).toBeVisible();
+  });
+
+  test('English locale smoke for a study session', async ({ page }) => {
+    await mockStudyApi(page);
+    await page.goto('/en/auth/login');
+    await page.getByLabel('Email').fill(user.email);
+    await page.getByLabel('Password').fill('password123');
+    await page.getByRole('button', { name: 'Log in' }).click();
+    await expect(page).toHaveURL(/\/en\/dashboard/);
+    await page.goto(`/en/words/${word.id}`);
+    await page.getByRole('button', { name: 'Try a quiz' }).click();
+    await expect(page).toHaveURL(new RegExp(`/en/study/${sessionId}`));
+    await expect(page.getByText('Which word means:')).toBeVisible();
+  });
+
+  test('@mobile nuance cards wrap and the exit control is at least 44px', async ({ page }) => {
+    await mockStudyApi(page);
+    await login(page);
+    await page.goto(`/vi/words/${word.id}`);
+    await page.getByRole('button', { name: 'Làm quiz thử' }).click();
+    await expect(page.getByText('Từ nào có nghĩa:')).toBeVisible();
+    const exit = page.getByRole('button', { name: 'Thoát phiên học' });
+    const box = await exit.boundingBox();
+    expect(box).toBeTruthy();
+    expect(Math.min(box?.width ?? 0, box?.height ?? 0)).toBeGreaterThanOrEqual(44);
+    await page.getByRole('radio', { name: /ephemeral/ }).click({ force: true });
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    await page.getByLabel('Từ của bạn').fill('ephemeral');
+    await page.getByRole('button', { name: 'Kiểm tra →' }).click();
+    await page.getByRole('button', { name: 'Tiếp theo →' }).click();
+    const nuance = page.getByRole('radio', { name: /sunset was beautiful/i });
+    await expect(nuance).toBeVisible();
+    const nuanceBox = await nuance.evaluate((el) => el.closest('label')?.getBoundingClientRect());
+    expect(nuanceBox?.height ?? 0).toBeGreaterThan(40);
+  });
+});
+
+test.describe('live full-stack', () => {
+  test.skip(!process.env.E2E_LIVE || !authEnabled, 'Set E2E_LIVE=true against Fake AI backend');
+
+  test('register, generate a word, complete a trial, then refresh dashboard stats', async ({
+    page,
+  }) => {
+    const stamp = Date.now();
+    await page.goto('/vi/auth/register');
+    await page.getByLabel('Email').fill(`live-${stamp}@example.com`);
+    await page.getByLabel('Mật khẩu').fill('password123');
+    await page.getByLabel('Xác nhận mật khẩu').fill('password123');
+    await page.getByRole('button', { name: 'Đăng ký' }).click();
+    await expect(page).toHaveURL(/\/vi\/dashboard/);
+    await page.goto('/vi/words/new');
+    await page.getByLabel('Từ tiếng Anh').fill(`ephemeral${stamp}`);
+    await page.getByRole('button', { name: 'Thêm →' }).click();
+    await expect(page.getByRole('button', { name: 'Làm quiz thử' })).toBeEnabled({
+      timeout: 60_000,
+    });
+    await page.getByRole('button', { name: 'Làm quiz thử' }).click();
+    await expect(page).toHaveURL(/\/vi\/study\//);
+    await expect(page.getByRole('progressbar')).toBeVisible();
   });
 });

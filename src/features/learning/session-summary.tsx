@@ -18,6 +18,7 @@ interface SessionSummaryProps {
   failedHint: string;
   improvedLabel: string;
   reviewLabel: string;
+  leveledUpLabel: string;
   nextDueLabel: string;
   homeLabel: string;
   addWordLabel: string;
@@ -33,10 +34,14 @@ function WordList({
   label,
   words,
   direction,
+  leveledUpIds,
+  leveledUpLabel,
 }: {
   label: string;
   words: SessionSummaryDto['improvedWords'];
   direction: 'up' | 'down';
+  leveledUpIds: Set<string>;
+  leveledUpLabel: string;
 }) {
   if (!words.length) return null;
   return (
@@ -53,6 +58,9 @@ function WordList({
               {direction === 'up' ? '↑' : '↓'}
             </span>
             <WordHealthBadge level={toHealthLevel(word.levelAfter)} />
+            {leveledUpIds.has(word.wordId) ? (
+              <span className={cn('text-xs', theme.successText)}>{leveledUpLabel}</span>
+            ) : null}
           </li>
         ))}
       </ul>
@@ -71,6 +79,7 @@ export function SessionSummaryView({
   failedHint,
   improvedLabel,
   reviewLabel,
+  leveledUpLabel,
   nextDueLabel,
   homeLabel,
   addWordLabel,
@@ -87,8 +96,20 @@ export function SessionSummaryView({
       <p className="m-0">{statsLine}</p>
       {canonical ? (
         <>
-          <WordList label={improvedLabel} words={canonical.improvedWords} direction="up" />
-          <WordList label={reviewLabel} words={canonical.reviewWords} direction="down" />
+          <WordList
+            label={improvedLabel}
+            words={canonical.improvedWords}
+            direction="up"
+            leveledUpIds={new Set(canonical.leveledUpWords.map((word) => word.wordId))}
+            leveledUpLabel={leveledUpLabel}
+          />
+          <WordList
+            label={reviewLabel}
+            words={canonical.reviewWords}
+            direction="down"
+            leveledUpIds={new Set(canonical.leveledUpWords.map((word) => word.wordId))}
+            leveledUpLabel={leveledUpLabel}
+          />
           {canonical.nextDueAt ? (
             <p className={cn('m-0 text-sm', theme.muted)}>{nextDueLabel}</p>
           ) : null}
@@ -99,7 +120,9 @@ export function SessionSummaryView({
           {failedHint}
         </p>
       ) : syncPending ? (
-        <p className={cn('m-0 text-sm', theme.muted)}>{pendingHint}</p>
+        <p className={cn('m-0 text-sm', theme.muted)} role="status">
+          {pendingHint}
+        </p>
       ) : null}
       <div className="flex flex-wrap gap-3">
         <Button type="button" onClick={onAddWord}>

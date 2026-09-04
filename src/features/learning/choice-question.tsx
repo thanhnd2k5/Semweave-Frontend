@@ -38,14 +38,34 @@ export function ChoiceQuestion({
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (disabled || event.altKey || event.ctrlKey || event.metaKey) return;
+      if (
+        event.key === 'ArrowDown' ||
+        event.key === 'ArrowUp' ||
+        event.key === 'ArrowLeft' ||
+        event.key === 'ArrowRight'
+      ) {
+        const radios = [
+          ...(groupRef.current?.querySelectorAll<HTMLInputElement>(
+            'input[type="radio"]:not(:disabled)',
+          ) ?? []),
+        ];
+        if (radios.length === 0) return;
+        event.preventDefault();
+        const currentIndex = radios.findIndex((radio) => radio === document.activeElement);
+        const delta = event.key === 'ArrowDown' || event.key === 'ArrowRight' ? 1 : -1;
+        const nextIndex =
+          currentIndex < 0 ? 0 : (currentIndex + delta + radios.length) % radios.length;
+        radios[nextIndex]?.focus();
+        return;
+      }
       const index = Number(event.key) - 1;
       if (index < 0 || index >= options.length) return;
       event.preventDefault();
       onChange(options[index].id);
     }
 
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
+    return () => window.removeEventListener('keydown', onKey, true);
   }, [disabled, onChange, options]);
 
   return (
@@ -67,7 +87,7 @@ export function ChoiceQuestion({
               value={option.id}
               disabled={disabled}
               variant="card"
-              className={quizType === 'NUANCE' ? theme.radioCardNuance : undefined}
+              className={quizType === 'NUANCE_COMPARISON' ? theme.radioCardNuance : undefined}
             >
               <span className="sr-only">{index + 1}. </span>
               {option.text}

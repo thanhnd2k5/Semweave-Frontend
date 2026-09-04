@@ -1,4 +1,5 @@
 import type { LearningDatabase } from './local-db';
+import { DoubleAnswerError } from '../engine/session-machine';
 import type {
   FinalizeSessionInput,
   FinalizationEndpoint,
@@ -72,7 +73,7 @@ export function createSessionRepository(db: LearningDatabase) {
           input.attempt.sessionQuestionId,
         ]);
         if (existing) {
-          throw new Error(`Attempt already exists for ${input.attempt.sessionQuestionId}`);
+          throw new DoubleAnswerError(input.attempt.sessionQuestionId);
         }
         await db.sessionAttempts.put(stored);
         await db.sessionSnapshots.put({
@@ -162,7 +163,11 @@ export function createSessionRepository(db: LearningDatabase) {
         await db.sessionSnapshots.put({
           ...snapshot,
           localStatus: input.endpoint === 'COMPLETE' ? 'PENDING_COMPLETE' : 'PENDING_ABANDON',
-          timer: { elapsedMs: snapshot.timer.elapsedMs, runningSince: null },
+          timer: {
+            elapsedMs: snapshot.timer.elapsedMs,
+            runningSince: null,
+            sessionElapsedMs: snapshot.timer.sessionElapsedMs ?? 0,
+          },
           updatedAt: input.nowIso,
         });
         return operation;
@@ -176,8 +181,11 @@ export function createSessionRepository(db: LearningDatabase) {
       return db.sessionSyncOperations.get([ownerId, sessionId]);
     },
 
-    async listDueSyncOperations(now: number): Promise<SessionSyncOperation[]> {
-      return db.sessionSyncOperations
+    async listDueSyncOperations(now: number, ownerId?: string): Promise<SessionSyncOperation[]> {
+      const collection = ownerId
+        ? db.sessionSyncOperations.where('ownerId').equals(ownerId)
+        : db.sessionSyncOperations;
+      return collection
         .filter(
           (operation) =>
             (operation.status === 'PENDING' || operation.status === 'FAILED') &&
@@ -239,8 +247,44 @@ export function createSessionRepository(db: LearningDatabase) {
       });
     },
 
-    async saveLease(operation: SessionSyncOperation): Promise<void> {
-      await db.sessionSyncOperations.put(operation);
+    async tryAcquireLease(input: {
+      ownerId: string;
+      sessionId: string;
+      leaseOwner: string;
+      now: number;
+      leaseMs: number;
+    }): Promise<boolean> {
+      return db.transaction('rw', db.sessionSyncOperations, async () => {
+        const operation = await db.sessionSyncOperations.get([input.ownerId, input.sessionId]);
+        if (!operation) return true;
+        if (
+          operation.leaseOwner &&
+          operation.leaseExpiresAt &&
+          operation.leaseExpiresAt > input.now &&
+          operation.leaseOwner !== input.leaseOwner
+        ) {
+          return false;
+        }
+        await db.sessionSyncOperations.put({
+          ...operation,
+          leaseOwner: input.leaseOwner,
+          leaseExpiresAt: input.now + input.leaseMs,
+        });
+        return true;
+      });
+    },
+
+    async releaseLease(ownerId: string, sessionId: string, leaseOwner: string): Promise<void> {
+      await db.transaction('rw', db.sessionSyncOperations, async () => {
+        const latest = await db.sessionSyncOperations.get([ownerId, sessionId]);
+        if (latest && latest.leaseOwner === leaseOwner) {
+          await db.sessionSyncOperations.put({
+            ...latest,
+            leaseOwner: null,
+            leaseExpiresAt: null,
+          });
+        }
+      });
     },
 
     async clearOwner(ownerId: string): Promise<void> {

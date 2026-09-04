@@ -36,4 +36,13 @@ describe('fill-in-blank grader v1 golden fixtures (FE parity)', () => {
     expect(result.isCorrect).toBe(testCase.expected.isCorrect);
     expect(result.matchedVariant).toBe(testCase.expected.matchedVariant);
   });
+
+  it('rejects oversized answers without partial credit', () => {
+    const result = gradeFillInBlank({
+      userAnswer: 'a'.repeat(201),
+      correctAnswer: 'ephemeral',
+    });
+    expect(result.isCorrect).toBe(false);
+    expect(result.matchedVariant).toBeNull();
+  });
 });

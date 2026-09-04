@@ -1,5 +1,5 @@
 import type { LocalGrade, SessionAttemptAnswer, SessionQuestion } from '../types';
-import { gradeFillInBlank } from './fill-in-blank-grader';
+import { gradeFillInBlank, normalizeAnswer } from '@/features/learning/grading/fill-in-blank.grader';
 
 export function gradeLocalAnswer(
   question: SessionQuestion,
@@ -23,7 +23,9 @@ export function gradeLocalAnswer(
 
   const option = question.options.find((item) => item.id === answer.optionId);
   return {
-    isCorrect: Boolean(option && option.text === question.correctAnswer),
+    isCorrect: Boolean(
+      option && normalizeAnswer(option.text) === normalizeAnswer(question.correctAnswer),
+    ),
     matchedVariant: null,
   };
 }

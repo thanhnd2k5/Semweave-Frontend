@@ -12,6 +12,9 @@ export type SyncWorkerDeps = {
   now?: () => number;
   jitter?: () => number;
   isOnline?: () => boolean;
+  ownerId?: string;
+  /** Reconnect / tab focus should retry immediately instead of waiting on backoff. */
+  ignoreRetryAt?: boolean;
 };
 
 const MAX_BACKOFF_MS = 30_000;
@@ -103,7 +106,12 @@ export async function processSyncOperation(
 export async function scanAndProcessDueSync(deps: SyncWorkerDeps): Promise<boolean> {
   if (deps.isOnline && !deps.isOnline()) return false;
   const now = deps.now?.() ?? Date.now();
-  const due = await deps.repo.listDueSyncOperations(now);
+  const due =
+    deps.ignoreRetryAt && deps.ownerId
+      ? (await deps.repo.listOwnerSyncOperations(deps.ownerId)).filter(
+          (operation) => operation.status === 'PENDING' || operation.status === 'FAILED',
+        )
+      : await deps.repo.listDueSyncOperations(now, deps.ownerId);
   let synced = false;
   for (const operation of due) {
     const summary = await processSyncOperation(operation.ownerId, operation.sessionId, deps);

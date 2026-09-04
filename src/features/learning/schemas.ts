@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { FILL_IN_ANSWER_MAX_LENGTH } from '@/features/learning/grading/fill-in-blank.grader';
 
 const isoDateTime = z
   .string()
@@ -12,13 +13,16 @@ const uuid = z
     'Invalid uuid',
   );
 
-const quizTypeSchema = z.enum([
-  'FILL_IN_BLANK',
-  'DEFINITION_MATCH',
-  'REVERSE_RECALL',
-  'CONTEXT_SELECTION',
-  'NUANCE',
-]);
+const quizTypeSchema = z.preprocess(
+  (value) => (value === 'NUANCE' ? 'NUANCE_COMPARISON' : value),
+  z.enum([
+    'FILL_IN_BLANK',
+    'DEFINITION_MATCH',
+    'REVERSE_RECALL',
+    'CONTEXT_SELECTION',
+    'NUANCE_COMPARISON',
+  ]),
+);
 
 const sessionTypeSchema = z.enum(['DUE_TODAY', 'WORD_TRIAL']);
 const sessionStatusSchema = z.enum(['IN_PROGRESS', 'COMPLETED', 'ABANDONED']);
@@ -142,7 +146,7 @@ export const createSessionInputSchema = z
   });
 
 const attemptAnswerSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('TEXT'), text: z.string() }),
+  z.object({ kind: z.literal('TEXT'), text: z.string().max(FILL_IN_ANSWER_MAX_LENGTH) }),
   z.object({ kind: z.literal('OPTION'), optionId: z.string().min(1) }),
 ]);
 

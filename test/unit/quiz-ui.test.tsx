@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { NextIntlClientProvider } from 'next-intl';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { ChoiceQuestion } from '@/features/learning/choice-question';
 import { FillInBlankQuestion } from '@/features/learning/fill-in-blank-question';
 import { SessionSummaryView } from '@/features/learning/session-summary';
@@ -29,7 +30,7 @@ const instructions: Record<QuizType, string> = {
   REVERSE_RECALL: 'Chọn từ tiếng Anh phù hợp nhất',
   CONTEXT_SELECTION: 'Chọn từ điền vào chỗ trống phù hợp nhất',
   DEFINITION_MATCH: 'Từ nào có nghĩa:',
-  NUANCE: 'Câu nào dùng từ CHÍNH XÁC và TỰ NHIÊN nhất trong ngữ cảnh này?',
+  NUANCE_COMPARISON: 'Câu nào dùng từ CHÍNH XÁC và TỰ NHIÊN nhất trong ngữ cảnh này?',
 };
 
 describe('quiz UI primitives', () => {
@@ -60,7 +61,7 @@ describe('quiz UI primitives', () => {
             prompt="Choose carefully"
             instruction={instruction}
             options={
-              type === 'NUANCE'
+              type === 'NUANCE_COMPARISON'
                 ? [
                     {
                       id: 'n1',
@@ -83,13 +84,33 @@ describe('quiz UI primitives', () => {
       expect(screen.getByText(instruction)).toBeInTheDocument();
       expect(screen.queryByText('short-lived')).not.toBeInTheDocument();
       expect(screen.queryByTestId('quiz-feedback')).not.toBeInTheDocument();
-      if (type === 'NUANCE') {
+      if (type === 'NUANCE_COMPARISON') {
         const radio = screen.getByRole('radio', { name: /sunset was beautiful/i });
         expect(radio.closest('label')?.className).toMatch(/min-h-\[4\.5rem\]/);
         expect(radio.closest('label')?.className).toMatch(/whitespace-normal/);
       }
     },
   );
+
+  it('moves focus with arrows without submitting', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    wrap(
+      <ChoiceQuestion
+        prompt="Choose carefully"
+        instruction="Từ nào có nghĩa:"
+        options={options}
+        value=""
+        onChange={onChange}
+        quizType="DEFINITION_MATCH"
+      />,
+    );
+    const radios = screen.getAllByRole('radio');
+    radios[0].focus();
+    await user.keyboard('{ArrowDown}');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(radios[1]).toHaveFocus();
+  });
 
   it('shows explanation only inside QuizFeedback after an answer', () => {
     wrap(
@@ -117,6 +138,7 @@ describe('quiz UI primitives', () => {
         failedHint="Không đồng bộ được kết quả."
         improvedLabel="Cải thiện:"
         reviewLabel="Cần ôn thêm:"
+        leveledUpLabel="Lên cấp"
         nextDueLabel="Từ tiếp theo đến hạn: 3 giờ nữa"
         homeLabel="Home"
         addWordLabel="Thêm từ mới"
@@ -128,6 +150,7 @@ describe('quiz UI primitives', () => {
     );
 
     expect(screen.getByText('Đang chờ đồng bộ')).toBeInTheDocument();
+    expect(screen.getByText('Đang chờ đồng bộ')).toHaveAttribute('role', 'status');
     expect(screen.queryByText(/Từ tiếp theo đến hạn/)).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Word health level/)).not.toBeInTheDocument();
   });
@@ -154,7 +177,15 @@ describe('quiz UI primitives', () => {
         },
       ],
       reviewWords: [],
-      leveledUpWords: [],
+      leveledUpWords: [
+        {
+          wordId: 'w1',
+          term: 'ephemeral',
+          levelBefore: 1,
+          levelAfter: 2,
+          nextReviewAt: '2026-09-05T00:00:00.000Z',
+        },
+      ],
       skippedAttempts: [],
       nextDueAt: '2026-09-05T00:00:00.000Z',
       syncedAt: '2026-09-04T12:00:00.000Z',
@@ -172,6 +203,7 @@ describe('quiz UI primitives', () => {
         failedHint="Không đồng bộ được kết quả."
         improvedLabel="Cải thiện:"
         reviewLabel="Cần ôn thêm:"
+        leveledUpLabel="Lên cấp"
         nextDueLabel="Từ tiếp theo đến hạn: 3 giờ nữa"
         homeLabel="Home"
         addWordLabel="Thêm từ mới"
@@ -184,6 +216,7 @@ describe('quiz UI primitives', () => {
     );
 
     expect(screen.getByText('Cải thiện:')).toBeInTheDocument();
+    expect(screen.getByText('Lên cấp')).toBeInTheDocument();
     expect(screen.getByLabelText('Word health level 2 of 4')).toBeInTheDocument();
     expect(screen.getByText('Từ tiếp theo đến hạn: 3 giờ nữa')).toBeInTheDocument();
     expect(screen.queryByText('Đang chờ đồng bộ')).not.toBeInTheDocument();

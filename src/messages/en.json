@@ -276,6 +276,7 @@
     "stats": "{words} words · {percent}% correct · {duration}",
     "improved": "Improved:",
     "review": "Needs more review:",
+    "leveledUp": "Level up",
     "nextDue": "Next word due: {time}",
     "pendingSync": "Waiting to sync",
     "syncFailed": "Could not sync results. Try again when you are online.",

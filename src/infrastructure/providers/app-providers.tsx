@@ -44,10 +44,12 @@ function AuthQueryCacheBoundary() {
 
     const identityToClear = previousIdentity.current;
     previousIdentity.current = identity;
-    void clearPrivateQueryCache(queryClient, identityToClear);
-    if (identityToClear !== ANONYMOUS_QUERY_IDENTITY) {
-      void getSessionRepository().clearOwner(identityToClear);
-    }
+    void (async () => {
+      await clearPrivateQueryCache(queryClient, identityToClear);
+      if (identityToClear !== ANONYMOUS_QUERY_IDENTITY) {
+        await getSessionRepository().clearOwner(identityToClear);
+      }
+    })();
   }, [identity, queryClient]);
 
   return null;

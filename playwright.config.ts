@@ -18,6 +18,12 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      grepInvert: /@mobile/,
+    },
+    {
+      name: 'mobile',
+      use: { ...devices['iPhone 14'], browserName: 'chromium' },
+      grep: /@mobile/,
     },
   ],
   webServer: {

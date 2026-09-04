@@ -263,7 +263,7 @@ test.describe('M3-G dashboard', () => {
     await expect(page.getByRole('heading', { name: 'Session hoàn thành!' })).toBeVisible();
 
     dueTodayCount = 0;
-    await page.getByRole('button', { name: 'Home' }).click();
+    await page.getByRole('button', { name: 'Trang chủ' }).click();
     await expect(page).toHaveURL(/\/vi\/dashboard/);
     await expect(page.getByText('Bạn đã ôn hết hôm nay!')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Bắt đầu ôn →' })).toHaveCount(0);

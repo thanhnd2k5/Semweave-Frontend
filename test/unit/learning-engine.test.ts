@@ -7,11 +7,20 @@ import { createSessionRepository } from '@/features/learning/offline/session-rep
 import {
   bootstrapSession,
   cacheCreatedSession,
+  canAbandonSession,
+  pauseForegroundTimer,
   queueSessionFinalization,
+  resumeForegroundTimer,
   submitAnswer,
 } from '@/features/learning/session-runtime';
-import { processSyncOperation, resetSyncInflightForTests } from '@/features/learning/offline/sync-worker';
-import { createSessionInputSchema } from '@/features/learning/schemas';
+import {
+  processSyncOperation,
+  resetSyncInflightForTests,
+  scanAndProcessDueSync,
+} from '@/features/learning/offline/sync-worker';
+import { createSessionInputSchema, parseSessionBundle, sessionAttemptSchema } from '@/features/learning/schemas';
+import { FILL_IN_ANSWER_MAX_LENGTH } from '@/features/learning/grading/fill-in-blank.grader';
+import { gradeLocalAnswer } from '@/features/learning/engine/local-grade';
 import type { SessionBundle } from '@/features/learning/types';
 
 function bundle(): SessionBundle {
@@ -76,6 +85,57 @@ describe('learning schemas', () => {
       }).success,
     ).toBe(false);
   });
+
+  it('normalizes NUANCE to NUANCE_COMPARISON and rejects unknown types', () => {
+    const payload = {
+      ...bundle(),
+      questions: [
+        {
+          ...bundle().questions[0],
+          type: 'NUANCE',
+        },
+      ],
+    };
+    expect(parseSessionBundle(payload).questions[0].type).toBe('NUANCE_COMPARISON');
+    expect(
+      parseSessionBundle({
+        ...payload,
+        questions: [{ ...payload.questions[0], type: 'NUANCE_COMPARISON' }],
+      }).questions[0].type,
+    ).toBe('NUANCE_COMPARISON');
+    expect(() =>
+      parseSessionBundle({
+        ...payload,
+        questions: [{ ...payload.questions[0], type: 'UNKNOWN_TYPE' }],
+      }),
+    ).toThrow();
+  });
+
+  it('rejects oversized fill-in answers', () => {
+    expect(
+      sessionAttemptSchema.safeParse({
+        clientAttemptId: '11111111-1111-4111-8111-111111111111',
+        sessionQuestionId: 'q1',
+        sequence: 0,
+        answer: { kind: 'TEXT', text: 'a'.repeat(FILL_IN_ANSWER_MAX_LENGTH + 1) },
+        responseTimeMs: 1000,
+        attemptedAt: '2026-08-13T03:00:00.000Z',
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('local choice grading', () => {
+  it('matches options after NFKC and case folding', () => {
+    const question = bundle().questions[0];
+    const result = gradeLocalAnswer(question, { kind: 'OPTION', optionId: 'option_b' });
+    expect(result.isCorrect).toBe(true);
+    const cased = gradeLocalAnswer(
+      { ...question, correctAnswer: 'Ephemeral' },
+      { kind: 'OPTION', optionId: 'option_b' },
+    );
+    expect(cased.isCorrect).toBe(true);
+  });
 });
 
 describe('session machine', () => {
@@ -89,6 +149,24 @@ describe('session machine', () => {
     expect(() =>
       reduceSession(answered, { type: 'ANSWER', questionId: 'q1', isCorrect: false }, questions),
     ).toThrow(DoubleAnswerError);
+  });
+
+  it('only abandons in-progress answering or feedback', () => {
+    expect(
+      canAbandonSession({ localStatus: 'IN_PROGRESS', phase: 'question', completing: false }),
+    ).toBe(true);
+    expect(
+      canAbandonSession({ localStatus: 'IN_PROGRESS', phase: 'feedback', completing: false }),
+    ).toBe(true);
+    expect(
+      canAbandonSession({ localStatus: 'IN_PROGRESS', phase: 'summary', completing: false }),
+    ).toBe(false);
+    expect(
+      canAbandonSession({ localStatus: 'IN_PROGRESS', phase: 'question', completing: true }),
+    ).toBe(false);
+    expect(
+      canAbandonSession({ localStatus: 'PENDING_COMPLETE', phase: 'summary', completing: false }),
+    ).toBe(false);
   });
 });
 
@@ -155,6 +233,7 @@ describe('learning IndexedDB v2', () => {
     );
     expect(answered.machine.phase).toBe('feedback');
     expect(answered.attempts[0].responseTimeMs).toBe(2_500);
+    expect(answered.timer.sessionElapsedMs).toBe(2_500);
 
     const snapshot = await store.loadSnapshot('user-a', 'session-1');
     const attempts = await store.listAttempts('user-a', 'session-1');
@@ -175,17 +254,24 @@ describe('learning IndexedDB v2', () => {
     expect(resumed.attempts[0].localGrade.isCorrect).toBe(true);
   });
 
-  it('continues an unanswered question timer across reload', async () => {
+  it('does not count hidden or unloaded time toward the question timer', async () => {
     const { repo: store } = await repo();
     let now = 1_000;
     const clock = { now: () => now };
-    await cacheCreatedSession(store, 'user-a', bundle(), clock);
+    let runtime = await cacheCreatedSession(store, 'user-a', bundle(), clock);
     now = 4_000;
     const resumed = await bootstrapSession(store, 'user-a', 'session-1', clock);
-    const elapsed = readElapsed(resumed.timer, now);
-    expect(elapsed).toBe(3_000);
-    const running = startTimer(resetTimer(1_000), 1_000);
-    expect(readElapsed(running, 4_000)).toBe(3_000);
+    expect(readElapsed(resumed.timer, now)).toBe(0);
+    expect(readElapsed(startTimer(resetTimer(1_000), 1_000), 4_000)).toBe(3_000);
+
+    now = 2_500;
+    runtime = await pauseForegroundTimer(store, runtime, clock);
+    expect(runtime.timer.runningSince).toBeNull();
+    expect(runtime.timer.elapsedMs).toBe(1_500);
+    now = 8_000;
+    runtime = await resumeForegroundTimer(store, runtime, clock);
+    expect(readElapsed(runtime.timer, 8_000)).toBe(1_500);
+    expect(readElapsed(runtime.timer, 8_500)).toBe(2_000);
   });
 
   it('queues a single immutable finalization operation even if called twice', async () => {
@@ -206,6 +292,8 @@ describe('learning IndexedDB v2', () => {
     expect(second.payload).toEqual(first.payload);
     const due = await store.listDueSyncOperations(10_000);
     expect(due).toHaveLength(1);
+    expect(await store.listDueSyncOperations(10_000, 'user-b')).toEqual([]);
+    expect(await store.listDueSyncOperations(10_000, 'user-a')).toHaveLength(1);
   });
 
   it('retries reconnect finalization only one operation at a time', async () => {
@@ -239,6 +327,38 @@ describe('learning IndexedDB v2', () => {
     await vi.waitFor(() => expect(complete).toHaveBeenCalledTimes(1));
     release({ sessionId: 'session-1' });
     await Promise.all([first, second]);
+    expect(complete).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries reconnect finalization even when backoff has not elapsed', async () => {
+    const { repo: store } = await repo();
+    const clock = { now: () => 8_000, id: () => 'dddddddd-eeee-4fff-8888-000000000004' };
+    let runtime = await cacheCreatedSession(store, 'user-a', bundle(), clock);
+    runtime = await submitAnswer(store, runtime, { kind: 'OPTION', optionId: 'option_b' }, clock);
+    await queueSessionFinalization(store, runtime, 'COMPLETE', clock);
+    await store.markSyncResult({
+      ownerId: 'user-a',
+      sessionId: 'session-1',
+      status: 'FAILED',
+      lastError: 'network',
+      retryCount: 1,
+      nextRetryAt: 99_000,
+      nowIso: '2026-09-04T12:00:00.000Z',
+    });
+
+    expect(await store.listDueSyncOperations(8_000, 'user-a')).toEqual([]);
+
+    const complete = vi.fn(async () => ({ sessionId: 'session-1' }));
+    const synced = await scanAndProcessDueSync({
+      repo: store,
+      ownerId: 'user-a',
+      ignoreRetryAt: true,
+      complete: complete as never,
+      now: () => 8_000,
+      jitter: () => 0,
+    });
+
+    expect(synced).toBe(true);
     expect(complete).toHaveBeenCalledTimes(1);
   });
 });
