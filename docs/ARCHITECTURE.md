@@ -12,8 +12,12 @@ src/
 ├── features/
 │   ├── app/          # Home meta, API health, AppHeader (always on)
 │   ├── theme/        # useTheme hook + ThemeToggle (light/dark)
-│   └── _optional/    # Auth, offline — toggled via env
-└── app/              # Next.js App Router pages
+│   ├── dashboard/    # Dashboard + batch banner
+│   ├── words/        # Add / list / detail
+│   ├── queue/        # Learning queue
+│   ├── learning/     # Session engine, Dexie v2, quiz study host
+│   └── _optional/    # Auth — toggled via env
+└── app/              # Next.js App Router: (shell) + (focus) route groups
 ```
 
 ## Core (always enabled)
@@ -43,7 +47,7 @@ Enabled via env flags. See [ENABLE_FEATURES.md](./ENABLE_FEATURES.md).
 |------|----------|
 | `FEATURE_AUTH` | Login/register, auth store, middleware guard, refresh flow |
 | `FEATURE_API_PROXY` | `/api/*` → NestJS proxy (**dev only**, path allowlist) |
-| `FEATURE_OFFLINE` | Dexie IndexedDB stub |
+| `FEATURE_OFFLINE` | Legacy non-learning cache flag; session IndexedDB is core M3 |
 
 **Core (not a flag):** i18n via next-intl — `NEXT_PUBLIC_DEFAULT_LOCALE` (`vi` | `en`)
 
@@ -86,7 +90,7 @@ api-client → authStore.refreshToken() → POST /auth/refresh (cookie)
 ## Adding domain features
 
 1. Create `src/features/your-feature/`
-2. Add pages under `src/app/[locale]/your-feature/`
+2. Add pages under `src/app/[locale]/(shell)/` or `(focus)/` — route groups do not change public URLs
 3. Add routes to `common/constants/routes.ts` (`PUBLIC_ROUTES` / `PROTECTED_ROUTES`)
 4. Extend `ErrorCodes` for domain-specific error mapping
 5. Extend `PROXY_ALLOWED_PATH_PREFIXES` if using API proxy in dev

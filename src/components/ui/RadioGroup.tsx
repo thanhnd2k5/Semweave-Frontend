@@ -48,9 +48,11 @@ interface RadioProps {
   value: string;
   children: React.ReactNode;
   disabled?: boolean;
+  variant?: 'row' | 'card';
+  className?: string;
 }
 
-export function Radio({ value, children, disabled }: RadioProps) {
+export function Radio({ value, children, disabled, variant = 'row', className }: RadioProps) {
   const ctx = useContext(RadioGroupContext);
   if (!ctx) {
     throw new Error('Radio must be used within RadioGroup');
@@ -59,14 +61,20 @@ export function Radio({ value, children, disabled }: RadioProps) {
   const { name, value: selected, onChange } = ctx;
   const checked = selected === value;
   const id = useId();
+  const card = variant === 'card';
 
   return (
     <label
       htmlFor={id}
-      className={cn(theme.radioRow, disabled && 'cursor-not-allowed opacity-55')}
+      className={cn(
+        card ? theme.radioCard : theme.radioRow,
+        card && checked && theme.radioCardSelected,
+        disabled && 'cursor-not-allowed opacity-55',
+        className,
+      )}
     >
       <span
-        className={cn(theme.radioIndicator, checked && theme.radioIndicatorSelected)}
+        className={cn('mt-0.5', theme.radioIndicator, checked && theme.radioIndicatorSelected)}
         aria-hidden
       >
         {checked ? <span className={theme.radioIndicatorDot} /> : null}
@@ -81,7 +89,9 @@ export function Radio({ value, children, disabled }: RadioProps) {
         disabled={disabled}
         className="sr-only"
       />
-      <span className="text-sm text-text-primary">{children}</span>
+      <span className={cn('min-w-0 flex-1 text-sm text-text-primary', card && 'whitespace-normal break-words')}>
+        {children}
+      </span>
     </label>
   );
 }

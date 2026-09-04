@@ -1,0 +1,61 @@
+{
+  "gradingVersion": 1,
+  "cases": [
+    {
+      "id": "exact-correct",
+      "correctAnswer": "ephemeral",
+      "acceptedVariants": ["fleeting"],
+      "userAnswer": "ephemeral",
+      "expected": { "isCorrect": true, "matchedVariant": null }
+    },
+    {
+      "id": "accepted-variant",
+      "correctAnswer": "ephemeral",
+      "acceptedVariants": ["fleeting", "transient"],
+      "userAnswer": "Fleeting",
+      "expected": { "isCorrect": true, "matchedVariant": "fleeting" }
+    },
+    {
+      "id": "typo-distance-1",
+      "correctAnswer": "ephemeral",
+      "acceptedVariants": [],
+      "userAnswer": "ephemerel",
+      "expected": { "isCorrect": true, "matchedVariant": "ephemeral" }
+    },
+    {
+      "id": "typo-on-variant",
+      "correctAnswer": "ephemeral",
+      "acceptedVariants": ["fleeting"],
+      "userAnswer": "fleetng",
+      "expected": { "isCorrect": true, "matchedVariant": "fleeting" }
+    },
+    {
+      "id": "distance-2-wrong",
+      "correctAnswer": "ephemeral",
+      "acceptedVariants": [],
+      "userAnswer": "ephemerxx",
+      "expected": { "isCorrect": false, "matchedVariant": null }
+    },
+    {
+      "id": "empty-wrong",
+      "correctAnswer": "ephemeral",
+      "acceptedVariants": ["fleeting"],
+      "userAnswer": "   ",
+      "expected": { "isCorrect": false, "matchedVariant": null }
+    },
+    {
+      "id": "nfkc-and-case",
+      "correctAnswer": "café",
+      "acceptedVariants": [],
+      "userAnswer": "CAFÉ",
+      "expected": { "isCorrect": true, "matchedVariant": null }
+    },
+    {
+      "id": "unicode-trim",
+      "correctAnswer": "resilient",
+      "acceptedVariants": [],
+      "userAnswer": "\u00A0resilient\u00A0",
+      "expected": { "isCorrect": true, "matchedVariant": null }
+    }
+  ]
+}

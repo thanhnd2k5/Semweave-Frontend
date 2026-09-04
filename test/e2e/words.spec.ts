@@ -66,6 +66,19 @@ async function mockApi(page: Page, scenario: Scenario) {
       await respond(user);
       return;
     }
+    if (url.includes('/sessions/stats') && method === 'GET') {
+      await respond({
+        asOf: '2026-09-04T00:00:00.000Z',
+        dueTodayCount: 0,
+        nextDueAt: null,
+        totalLearningWords: 0,
+        queueCount: 0,
+        graduatedCount: 0,
+        sessionWordCount: 10,
+        dailyNewWordLimit: { limit: 3, used: 0, remaining: 3 },
+      });
+      return;
+    }
     if (url.includes('/words/check-duplicate') && method === 'GET') {
       await respond(
         scenario === 'duplicate' || scenario === 'regenerate-limit'

@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { cn } from '@/lib/cn';
 import { theme } from '@/lib/theme-classes';
 
@@ -24,17 +25,21 @@ const sizeClasses: Record<ButtonSize, string> = {
   lg: 'h-12 px-6 text-[1.0625rem]',
 };
 
-export function Button({
-  variant = 'primary',
-  size = 'md',
-  isLoading = false,
-  disabled,
-  className,
-  children,
-  ...props
-}: ButtonProps) {
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
+  {
+    variant = 'primary',
+    size = 'md',
+    isLoading = false,
+    disabled,
+    className,
+    children,
+    ...props
+  },
+  ref,
+) {
   return (
     <button
+      ref={ref}
       className={cn(
         'inline-flex cursor-pointer items-center justify-center gap-2 rounded-md border border-transparent font-medium transition-[background,border-color,opacity] duration-150',
         variantClasses[variant],
@@ -54,4 +59,4 @@ export function Button({
       <span className={isLoading ? 'opacity-70' : undefined}>{children}</span>
     </button>
   );
-}
+});

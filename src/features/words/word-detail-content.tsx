@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/Input';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Modal } from '@/components/ui/Modal';
 import { WordHealthBadge } from '@/components/ui/WordHealthBadge';
+import { invalidateLearningStats } from '@/features/learning/learning-query-keys';
 import { addQueueItem } from '@/features/queue/api';
 import { useQueryIdentity } from '@/hooks/use-query-identity';
 import { Link, useRouter } from '@/infrastructure/i18n/navigation';
@@ -20,6 +21,7 @@ import { theme } from '@/lib/theme-classes';
 import { deleteWord, getWord, retryWord, updateWordTags } from './api';
 import { getWordContent, toHealthLevel, type WordDetail } from './types';
 import { mergeWordDetail } from './word-cache';
+import { TrialQuizButton } from '@/features/learning/trial-quiz-button';
 
 export function WordDetailContent({ wordId }: { wordId: string }) {
   const t = useTranslations('words.detail');
@@ -55,6 +57,7 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.queue(queryIdentity),
       });
+      void invalidateLearningStats(queryClient, queryIdentity);
     },
   });
   const tagsMutation = useMutation({
@@ -83,6 +86,7 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.queue(queryIdentity),
       });
+      void invalidateLearningStats(queryClient, queryIdentity);
       router.replace(ROUTES.words);
     },
   });
@@ -97,6 +101,7 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.queue(queryIdentity),
       });
+      void invalidateLearningStats(queryClient, queryIdentity);
     },
   });
 
@@ -112,6 +117,7 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.queue(queryIdentity),
       });
+      void invalidateLearningStats(queryClient, queryIdentity);
     }
     previousStatus.current = status;
 
@@ -275,9 +281,13 @@ export function WordDetailContent({ wordId }: { wordId: string }) {
           <section>
             <h2 className="text-title">{t('quizPool')}</h2>
             <p className={cn('mt-2 mb-0', theme.muted)}>{t('quizCount', { count: word.quizzes.length })}</p>
-            <Button type="button" className="mt-3" variant="secondary" disabled>
-              {t('quizSoon')}
-            </Button>
+            <TrialQuizButton
+              wordId={word.id}
+              quizCount={word.quizzes.length}
+              label={t('quizTry')}
+              unavailable={t('quizUnavailable')}
+              className="mt-3"
+            />
           </section>
         ) : null}
 

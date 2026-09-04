@@ -18,6 +18,11 @@ export const privateQueryKeys = {
   queue: (identity: string) => [...privateQueryKeys.root(identity), 'queue'] as const,
   queuePage: (identity: string, page: number) =>
     [...privateQueryKeys.queue(identity), page] as const,
+  sessions: (identity: string) => [...privateQueryKeys.root(identity), 'sessions'] as const,
+  sessionStats: (identity: string) => [...privateQueryKeys.sessions(identity), 'stats'] as const,
+  dueToday: (identity: string) => [...privateQueryKeys.sessions(identity), 'due-today'] as const,
+  session: (identity: string, sessionId: string) =>
+    [...privateQueryKeys.sessions(identity), sessionId] as const,
 };
 
 /** Removes data and mutations that belonged to the previous signed-in identity. */

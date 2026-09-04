@@ -25,6 +25,7 @@ describe('routes', () => {
     expect(isProtectedRoute('/words/word-1')).toBe(true);
     expect(isProtectedRoute('/queue')).toBe(true);
     expect(isProtectedRoute('/settings')).toBe(true);
+    expect(isProtectedRoute('/study/session-1')).toBe(true);
     expect(isProtectedRoute('/auth/login')).toBe(false);
   });
 });
@@ -36,6 +37,7 @@ describe('isSafePostLoginPath', () => {
     expect(isSafePostLoginPath('/words/word-1')).toBe(true);
     expect(isSafePostLoginPath('/queue')).toBe(true);
     expect(isSafePostLoginPath('/settings')).toBe(true);
+    expect(isSafePostLoginPath('/study/session-1')).toBe(true);
   });
 
   it('rejects external and malformed paths', () => {

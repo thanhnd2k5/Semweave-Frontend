@@ -11,6 +11,12 @@ describe('private query cache', () => {
     expect(privateQueryKeys.wordDetail('user-a', 'word-1')).not.toEqual(
       privateQueryKeys.wordDetail('user-b', 'word-1'),
     );
+    expect(privateQueryKeys.session('user-a', 's1')).not.toEqual(
+      privateQueryKeys.session('user-b', 's1'),
+    );
+    expect(privateQueryKeys.sessionStats('user-a')).not.toEqual(
+      privateQueryKeys.sessionStats('user-b'),
+    );
     expect(getQueryIdentity(null)).toBe('anonymous');
   });
 

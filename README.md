@@ -18,7 +18,7 @@ pnpm run dev
 - http://localhost:3000/vi — Home
 - http://localhost:3000/vi/settings — User preferences (protected when `FEATURE_AUTH=true`)
 - http://localhost:3000/vi/auth/login — Login (when `FEATURE_AUTH=true`)
-- http://localhost:3000/vi/dashboard — Dashboard placeholder
+- http://localhost:3000/vi/dashboard — Dashboard (due count, Due Today, M2 quick actions)
 
 ## Core (always on)
 

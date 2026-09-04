@@ -41,6 +41,9 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@tailwindcss/postcss": "^4.3.2",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^26.4.1",
     "@types/react": "^19",
@@ -48,6 +51,7 @@
     "@vitejs/plugin-react": "^5.1.2",
     "eslint": "^9",
     "eslint-config-next": "16.2.10",
+    "fake-indexeddb": "^6.2.5",
     "jsdom": "^27.3.0",
     "postcss": "^8.5.16",
     "tailwindcss": "^4.3.2",

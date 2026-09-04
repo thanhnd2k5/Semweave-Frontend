@@ -4,6 +4,7 @@ export const PROXY_ALLOWED_PATH_PREFIXES = [
   'users/',
   'words/',
   'queue/',
+  'sessions/',
   'health',
 ] as const;
 

@@ -64,6 +64,19 @@ async function mockAuth(page: Page) {
       await respond(route, user);
       return;
     }
+    if (url.includes('/sessions/stats') && method === 'GET') {
+      await respond(route, {
+        asOf: '2026-09-04T00:00:00.000Z',
+        dueTodayCount: 0,
+        nextDueAt: null,
+        totalLearningWords: 0,
+        queueCount: 0,
+        graduatedCount: 0,
+        sessionWordCount: 10,
+        dailyNewWordLimit: { limit: 2, used: 0, remaining: 2 },
+      });
+      return;
+    }
     await route.fallback();
   });
 }
@@ -142,7 +155,7 @@ test.describe('phase C word library', () => {
     await page.getByRole('button', { name: 'Lưu tags' }).click();
     await expect(page.getByText('work', { exact: true })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Quiz đã chuẩn bị' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Làm quiz thử (sắp có)' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Làm quiz thử' })).toBeDisabled();
     await expect(page.getByRole('heading', { name: 'Từ liên quan' })).toBeVisible();
     await page.getByRole('button', { name: 'Thêm vào Queue' }).click();
     await expect(page.getByRole('button', { name: 'Đã có trong Queue' })).toBeVisible();

@@ -56,6 +56,8 @@ describe('proxy', () => {
     expect(isProxyPathAllowed('words/check-duplicate')).toBe(true);
     expect(isProxyPathAllowed('words/word-1/retry')).toBe(true);
     expect(isProxyPathAllowed('queue/process')).toBe(true);
+    expect(isProxyPathAllowed('sessions/stats')).toBe(true);
+    expect(isProxyPathAllowed('sessions/abc/complete')).toBe(true);
     expect(isProxyPathAllowed('health')).toBe(true);
     expect(isProxyPathAllowed('')).toBe(true);
     expect(isProxyPathAllowed('admin/secret')).toBe(false);

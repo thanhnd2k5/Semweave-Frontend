@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/features/_optional/auth/use-auth';
 import { useQueryIdentity } from '@/hooks/use-query-identity';
 import { Link, useRouter } from '@/infrastructure/i18n/navigation';
+import { invalidateLearningStats } from '@/features/learning/learning-query-keys';
 import { getWordContent } from '@/features/words/types';
 import { cn } from '@/lib/cn';
 import { getCanonicalPage } from '@/lib/pagination';
@@ -70,6 +71,7 @@ export function QueueContent() {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.words(queryIdentity),
       });
+      void invalidateLearningStats(queryClient, queryIdentity);
     },
   });
   const processMutation = useMutation({
@@ -103,6 +105,7 @@ export function QueueContent() {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.words(queryIdentity),
       });
+      void invalidateLearningStats(queryClient, queryIdentity);
     },
   });
 
@@ -112,6 +115,7 @@ export function QueueContent() {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.words(queryIdentity),
       });
+      void invalidateLearningStats(queryClient, queryIdentity);
     }
     hadPendingItems.current = hasPendingItems;
   }, [queryClient, queryIdentity, queueQuery.data]);

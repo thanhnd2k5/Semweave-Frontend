@@ -7,7 +7,6 @@ import { setRequestLocale } from 'next-intl/server';
 import { getEnvConfig } from '@/config/env';
 import { LocaleProviders } from '@/infrastructure/providers/locale-providers';
 import { AuthHydrator } from '@/features/_optional/auth/auth-hydrator';
-import { AppHeader } from '@/features/app/app-header';
 import { routing } from '@/infrastructure/i18n/routing';
 import { cn } from '@/lib/cn';
 import { theme } from '@/lib/theme-classes';
@@ -51,12 +50,7 @@ export default async function LocaleLayout({ children, params }: LocaleLayoutPro
           {themeInitScript}
         </Script>
         <LocaleProviders>
-          <AuthHydrator>
-            <div className="mx-auto min-h-screen max-w-3xl px-4 py-8">
-              <AppHeader />
-              {children}
-            </div>
-          </AuthHydrator>
+          <AuthHydrator>{children}</AuthHydrator>
         </LocaleProviders>
       </body>
     </html>

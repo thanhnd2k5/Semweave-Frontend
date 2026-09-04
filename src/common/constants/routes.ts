@@ -7,6 +7,7 @@ export const ROUTES = {
   wordDetail: (wordId: string) => `/words/${encodeURIComponent(wordId)}`,
   queue: '/queue',
   settings: '/settings',
+  study: (sessionId: string) => `/study/${encodeURIComponent(sessionId)}`,
   login: '/auth/login',
   register: '/auth/register',
 } as const;
@@ -24,6 +25,7 @@ export const PROTECTED_ROUTES: string[] = [
   ROUTES.words,
   ROUTES.queue,
   ROUTES.settings,
+  '/study',
 ];
 
 const SAFE_INTERNAL_PATH = /^\/[a-zA-Z0-9/_-]*$/;

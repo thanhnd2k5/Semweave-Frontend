@@ -1,25 +1,58 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { Link } from '@/infrastructure/i18n/navigation';
+import { Link, useRouter } from '@/infrastructure/i18n/navigation';
 import { Button } from '@/components/ui/Button';
 import { ROUTES } from '@/common/constants/routes';
 import { useAuth } from '@/features/_optional/auth/use-auth';
+import { getSessionStats } from '@/features/learning/api';
+import { learningQueryKeys } from '@/features/learning/learning-query-keys';
+import { useStartStudySession } from '@/features/learning/use-start-study-session';
+import { usePendingSyncCount } from '@/features/learning/offline/use-pending-sync-count';
+import { useQueryIdentity } from '@/hooks/use-query-identity';
+import { ANONYMOUS_QUERY_IDENTITY } from '@/lib/private-query';
 import { theme } from '@/lib/theme-classes';
 import { BatchProgressBanner } from './batch-progress-banner';
+import { DashboardLearningPanel } from './dashboard-learning-panel';
 
 export function DashboardContent() {
   const t = useTranslations('dashboard');
   const tAuth = useTranslations('auth');
-  const tCommon = useTranslations('common');
-  const { user, logout, isAuthenticated } = useAuth();
+  const queryIdentity = useQueryIdentity();
+  const router = useRouter();
+  const { logout, isAuthenticated } = useAuth();
+  const { startDueToday, pending: startPending, error: startError } = useStartStudySession();
+  const pendingSyncCount = usePendingSyncCount(queryIdentity);
+
+  const statsQuery = useQuery({
+    queryKey: learningQueryKeys.stats(queryIdentity),
+    queryFn: getSessionStats,
+    enabled: queryIdentity !== ANONYMOUS_QUERY_IDENTITY,
+    retry: false,
+  });
 
   return (
-    <main className="mx-auto flex w-full max-w-5xl flex-col gap-4">
+    <main className="mx-auto flex w-full max-w-5xl flex-col gap-6">
       <BatchProgressBanner />
-      <h1>{t('title')}</h1>
-      {user ? <p>{t('welcome', { email: user.email })}</p> : null}
-      <p className={theme.muted}>{t('placeholder')}</p>
+      {pendingSyncCount > 0 ? (
+        <p className={theme.warnSurface} role="status">
+          {t('pendingSync')}
+        </p>
+      ) : null}
+
+      <h1 className="m-0 text-title">{t('title')}</h1>
+
+      <DashboardLearningPanel
+        stats={statsQuery.data}
+        isPending={statsQuery.isPending}
+        isError={statsQuery.isError}
+        startPending={startPending}
+        startError={startError}
+        onStartReview={() => void startDueToday()}
+        onRetry={() => void statsQuery.refetch()}
+        onAddWord={() => router.push(ROUTES.wordsNew)}
+      />
 
       <nav className="flex flex-wrap items-center gap-4">
         {isAuthenticated ? (
@@ -40,10 +73,6 @@ export function DashboardContent() {
           {t('queue')}
         </Link>
       </nav>
-
-      <Link href={ROUTES.home} className={`mt-6 ${theme.linkMuted}`}>
-        ← {tCommon('back')}
-      </Link>
     </main>
   );
 }

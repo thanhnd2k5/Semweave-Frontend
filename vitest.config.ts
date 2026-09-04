@@ -6,7 +6,8 @@ export default defineConfig({
   plugins: [react()],
   test: {
     environment: 'jsdom',
-    include: ['test/unit/**/*.test.ts'],
+    include: ['test/unit/**/*.{test.ts,test.tsx}'],
+    setupFiles: ['test/setup-indexeddb.ts'],
   },
   resolve: {
     alias: {

@@ -67,4 +67,10 @@ export const theme = {
     'flex size-4 shrink-0 items-center justify-center rounded-full border-2 border-border',
   radioIndicatorSelected: 'border-accent',
   radioIndicatorDot: 'size-2 rounded-full bg-accent',
+  radioCard:
+    'flex min-h-11 w-full cursor-pointer items-start gap-3 rounded-md border border-border bg-bg-surface px-4 py-3 text-left transition-[border-color,background-color] duration-150 hover:border-accent has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent/35',
+  radioCardSelected: 'border-accent bg-accent-subtle',
+  radioCardNuance: 'min-h-[4.5rem] whitespace-normal',
+  quizFeedbackSuccess: 'rounded-md border-l-4 border-success bg-success/10 px-4 py-3 text-success',
+  quizFeedbackError: 'rounded-md border-l-4 border-error bg-error/10 px-4 py-3 text-error',
 } as const;

@@ -75,11 +75,9 @@ When proxy is enabled, `api-client` uses base URL `/api`.
 FEATURE_OFFLINE=true
 ```
 
-**Provides:**
+Legacy flag for non-learning IndexedDB experiments. **M3 session durability does not depend on this flag** — Dexie v2 (`sessionSnapshots` / `sessionAttempts` / `sessionSyncOperations`) is always used by the learning engine, scoped by `ownerId`.
 
-- Dexie IndexedDB stub (`local-db.ts`, DB name `SemweaveLocal`)
-- `OfflineProvider` in app providers
-- Tables: `pendingAttempts`, `cachedQuizPools` (placeholder for quiz sync)
+The old unscoped `pendingAttempts` / `cachedQuizPools` tables are removed on upgrade to schema version 2.
 
 ## i18n (core)
 

@@ -14,6 +14,7 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { Modal } from '@/components/ui/Modal';
 import { Radio, RadioGroup } from '@/components/ui/RadioGroup';
 import { WordHealthBadge } from '@/components/ui/WordHealthBadge';
+import { invalidateLearningStats } from '@/features/learning/learning-query-keys';
 import { Link } from '@/infrastructure/i18n/navigation';
 import { useQueryIdentity } from '@/hooks/use-query-identity';
 import { cn } from '@/lib/cn';
@@ -34,6 +35,7 @@ import {
   type WordDetail,
 } from './types';
 import { BatchImport } from './batch-import';
+import { TrialQuizButton } from '@/features/learning/trial-quiz-button';
 
 type View =
   | { kind: 'editing' }
@@ -120,6 +122,7 @@ export function AddWordContent() {
     void queryClient.invalidateQueries({
       queryKey: privateQueryKeys.queue(queryIdentity),
     });
+    void invalidateLearningStats(queryClient, queryIdentity);
   }, [queryClient, queryIdentity, settledWordId]);
 
   function resetToEditing() {
@@ -137,6 +140,7 @@ export function AddWordContent() {
     void queryClient.invalidateQueries({
       queryKey: privateQueryKeys.queue(queryIdentity),
     });
+    void invalidateLearningStats(queryClient, queryIdentity);
     setView({ kind: 'generating', wordId });
   }
 
@@ -579,9 +583,14 @@ function PreviewState({
         ) : null}
       </section>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <Button type="button" size="lg" disabled>
-          {t('preview.quizSoon')}
-        </Button>
+        <TrialQuizButton
+          wordId={word.id}
+          quizCount={word.quizzes?.length}
+          label={t('preview.quizTry')}
+          unavailable={t('detail.quizUnavailable')}
+          size="lg"
+          autoFocus
+        />
         <Link href={ROUTES.wordDetail(word.id)} className={theme.link}>
           {t('preview.viewFull')}
         </Link>

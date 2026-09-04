@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { ROUTES } from '@/common/constants/routes';
 import { ApiError } from '@/common/errors/api-error';
 import { LinearProgress } from '@/components/ui/LinearProgress';
+import { invalidateLearningStats } from '@/features/learning/learning-query-keys';
 import { getImportBatch } from '@/features/words/api';
 import type { ImportSkip } from '@/features/words/types';
 import { useQueryIdentity } from '@/hooks/use-query-identity';
@@ -42,6 +43,7 @@ export function BatchProgressBanner() {
       void queryClient.invalidateQueries({
         queryKey: privateQueryKeys.wordList(queryIdentity),
       });
+      void invalidateLearningStats(queryClient, queryIdentity);
     }
   }, [batchStatus, queryClient, queryIdentity]);
 

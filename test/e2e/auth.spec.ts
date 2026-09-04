@@ -53,6 +53,27 @@ function mockAuthApi(page: import('@playwright/test').Page) {
       return;
     }
 
+    if (url.includes('/sessions/stats') && route.request().method() === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: {
+            asOf: '2026-09-04T00:00:00.000Z',
+            dueTodayCount: 0,
+            nextDueAt: null,
+            totalLearningWords: 0,
+            queueCount: 0,
+            graduatedCount: 0,
+            sessionWordCount: 10,
+            dailyNewWordLimit: { limit: 3, used: 0, remaining: 3 },
+          },
+        }),
+      });
+      return;
+    }
+
     await route.continue();
   });
 }
