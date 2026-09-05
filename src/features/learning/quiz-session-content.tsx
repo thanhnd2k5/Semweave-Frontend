@@ -97,8 +97,10 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
   const runtimeRef = useRef<SessionRuntime | null>(null);
   const busyRef = useRef(false);
   const completingRef = useRef(false);
+  const pendingAbandonRef = useRef(false);
   const pendingSyncTriedRef = useRef(false);
   const nextButtonRef = useRef<HTMLButtonElement>(null);
+  const onFinalizeRef = useRef<(endpoint: 'COMPLETE' | 'ABANDON') => void>(() => undefined);
 
   useEffect(() => {
     runtimeRef.current = runtime;
@@ -133,6 +135,7 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
       setBusy(true);
       try {
         const next = await submitAnswer(repo, current, toAnswer(question, draft));
+        runtimeRef.current = next;
         setRuntime(next);
       } catch (cause) {
         if (!(cause instanceof DoubleAnswerError)) {
@@ -141,6 +144,10 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
       } finally {
         busyRef.current = false;
         setBusy(false);
+        if (pendingAbandonRef.current) {
+          pendingAbandonRef.current = false;
+          onFinalizeRef.current('ABANDON');
+        }
       }
     },
     [repo, t],
@@ -158,6 +165,10 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
     } finally {
       busyRef.current = false;
       setBusy(false);
+      if (pendingAbandonRef.current) {
+        pendingAbandonRef.current = false;
+        onFinalizeRef.current('ABANDON');
+      }
     }
   }, [repo]);
 
@@ -196,8 +207,13 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
           router.replace(ROUTES.dashboard);
           return;
         }
+        if (busyRef.current) {
+          pendingAbandonRef.current = true;
+          return;
+        }
+      } else if (busyRef.current) {
+        return;
       }
-      if (busyRef.current) return;
       busyRef.current = true;
       completingRef.current = true;
       setBusy(true);
@@ -226,6 +242,7 @@ export function QuizSessionContent({ sessionId }: QuizSessionContentProps) {
     },
     [ownerId, queryClient, refreshAfterSync, repo, router, sessionId, t, tErrors],
   );
+  onFinalizeRef.current = onFinalize;
 
   const onRetrySync = useCallback(async () => {
     pendingSyncTriedRef.current = true;

@@ -189,6 +189,38 @@ describe('quiz session flow', () => {
     expect(await screen.findByTestId('quiz-feedback')).toHaveAttribute('data-correct', 'false');
   });
 
+  it('abandons after an in-flight submit when Escape is pressed while busy', async () => {
+    const user = userEvent.setup();
+    const abandon = vi.spyOn(sessionApi, 'abandonSession').mockResolvedValue({
+      ...summary(),
+      status: 'ABANDONED',
+    });
+    const repo = await seed();
+    const original = repo.commitAttemptAndCursor.bind(repo);
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    repo.commitAttemptAndCursor = async (input) => {
+      await blocked;
+      return original(input);
+    };
+
+    renderSession();
+    expect(await screen.findByRole('radiogroup')).toBeInTheDocument();
+    const answering = user.click(screen.getByRole('radio', { name: /ephemeral/ }));
+    await waitFor(() => {
+      expect(screen.getByRole('radio', { name: /ephemeral/ })).toBeDisabled();
+    });
+    await user.keyboard('{Escape}');
+    release();
+    await answering;
+    await waitFor(() => {
+      expect(replace).toHaveBeenCalledWith('/dashboard');
+    });
+    expect(abandon).toHaveBeenCalledTimes(1);
+  });
+
   it('shows a pending summary without health when sync fails', async () => {
     const user = userEvent.setup();
     vi.spyOn(sessionApi, 'completeSession').mockRejectedValue(new Error('offline'));

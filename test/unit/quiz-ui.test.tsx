@@ -84,6 +84,9 @@ describe('quiz UI primitives', () => {
       expect(screen.getByText(instruction)).toBeInTheDocument();
       expect(screen.queryByText('short-lived')).not.toBeInTheDocument();
       expect(screen.queryByTestId('quiz-feedback')).not.toBeInTheDocument();
+      if (type === 'FILL_IN_BLANK') {
+        expect(screen.getByLabelText('Từ của bạn')).toHaveAttribute('maxLength', '200');
+      }
       if (type === 'NUANCE_COMPARISON') {
         const radio = screen.getByRole('radio', { name: /sunset was beautiful/i });
         expect(radio.closest('label')?.className).toMatch(/min-h-\[4\.5rem\]/);

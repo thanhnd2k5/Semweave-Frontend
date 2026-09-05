@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { FILL_IN_ANSWER_MAX_LENGTH } from '@/features/learning/grading/fill-in-blank.grader';
+import { FILL_IN_ANSWER_TRANSPORT_MAX_LENGTH } from '@/features/learning/grading/fill-in-blank.grader';
 
 const isoDateTime = z
   .string()
@@ -146,7 +146,7 @@ export const createSessionInputSchema = z
   });
 
 const attemptAnswerSchema = z.discriminatedUnion('kind', [
-  z.object({ kind: z.literal('TEXT'), text: z.string().max(FILL_IN_ANSWER_MAX_LENGTH) }),
+  z.object({ kind: z.literal('TEXT'), text: z.string().max(FILL_IN_ANSWER_TRANSPORT_MAX_LENGTH) }),
   z.object({ kind: z.literal('OPTION'), optionId: z.string().min(1) }),
 ]);
 

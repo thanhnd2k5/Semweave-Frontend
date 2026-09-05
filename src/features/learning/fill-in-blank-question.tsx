@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/cn';
 import { theme } from '@/lib/theme-classes';
+import { FILL_IN_ANSWER_MAX_LENGTH } from './grading/fill-in-blank.grader';
 
 interface FillInBlankQuestionProps {
   prompt: string;
@@ -49,6 +50,7 @@ export function FillInBlankQuestion({
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
+          maxLength={FILL_IN_ANSWER_MAX_LENGTH}
           className="text-center text-word"
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {

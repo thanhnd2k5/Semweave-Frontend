@@ -19,7 +19,7 @@ import {
   scanAndProcessDueSync,
 } from '@/features/learning/offline/sync-worker';
 import { createSessionInputSchema, parseSessionBundle, sessionAttemptSchema } from '@/features/learning/schemas';
-import { FILL_IN_ANSWER_MAX_LENGTH } from '@/features/learning/grading/fill-in-blank.grader';
+import { FILL_IN_ANSWER_MAX_LENGTH, FILL_IN_ANSWER_TRANSPORT_MAX_LENGTH } from '@/features/learning/grading/fill-in-blank.grader';
 import { gradeLocalAnswer } from '@/features/learning/engine/local-grade';
 import type { SessionBundle } from '@/features/learning/types';
 
@@ -111,15 +111,20 @@ describe('learning schemas', () => {
     ).toThrow();
   });
 
-  it('rejects oversized fill-in answers', () => {
+  it('lets oversized fill-in answers through so complete can grade them incorrect', () => {
+    const attempt = {
+      clientAttemptId: '11111111-1111-4111-8111-111111111111',
+      sessionQuestionId: 'q1',
+      sequence: 0,
+      answer: { kind: 'TEXT' as const, text: 'a'.repeat(FILL_IN_ANSWER_MAX_LENGTH + 1) },
+      responseTimeMs: 1000,
+      attemptedAt: '2026-08-13T03:00:00.000Z',
+    };
+    expect(sessionAttemptSchema.safeParse(attempt).success).toBe(true);
     expect(
       sessionAttemptSchema.safeParse({
-        clientAttemptId: '11111111-1111-4111-8111-111111111111',
-        sessionQuestionId: 'q1',
-        sequence: 0,
-        answer: { kind: 'TEXT', text: 'a'.repeat(FILL_IN_ANSWER_MAX_LENGTH + 1) },
-        responseTimeMs: 1000,
-        attemptedAt: '2026-08-13T03:00:00.000Z',
+        ...attempt,
+        answer: { kind: 'TEXT', text: 'a'.repeat(FILL_IN_ANSWER_TRANSPORT_MAX_LENGTH + 1) },
       }).success,
     ).toBe(false);
   });

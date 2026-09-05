@@ -1,5 +1,7 @@
 export const GRADING_VERSION = 1 as const;
 export const FILL_IN_ANSWER_MAX_LENGTH = 200;
+/** Wire ceiling so answers longer than 200 still reach the grader (incorrect, not 400). */
+export const FILL_IN_ANSWER_TRANSPORT_MAX_LENGTH = 10_000;
 
 export type FillInGradeResult = {
   isCorrect: boolean;
